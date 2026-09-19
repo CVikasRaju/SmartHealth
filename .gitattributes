@@ -1,0 +1,14 @@
+# Normalise line endings in the repository while letting each platform check
+# out its native convention, so the tree stays clean on Windows and Linux alike.
+* text=auto
+
+# Binary assets that must never be line-ending converted.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.pdf binary
+*.ico binary
+
+# Keep generated bundles out of diffs.
+dist/ linguist-generated=true
+package-lock.json linguist-generated=true
