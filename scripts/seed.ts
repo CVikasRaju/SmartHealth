@@ -20,10 +20,30 @@
  */
 
 import { createClient } from "@supabase/supabase-js";
+import { readFileSync, existsSync } from "node:fs";
+import { resolve } from "node:path";
 
 import { createSeedDatabase } from "../src/data/mockData";
 import type { DatabaseState } from "../src/types";
 import { createSupabaseRepository } from "../api/_lib/repo/supabase";
+
+// Automatically load .env if present
+const envPath = resolve(process.cwd(), ".env");
+if (existsSync(envPath)) {
+  const content = readFileSync(envPath, "utf-8");
+  for (const line of content.split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+    const eqIdx = trimmed.indexOf("=");
+    if (eqIdx !== -1) {
+      const key = trimmed.slice(0, eqIdx).trim();
+      const val = trimmed.slice(eqIdx + 1).trim();
+      if (key && !process.env[key]) {
+        process.env[key] = val;
+      }
+    }
+  }
+}
 
 const DEMO_PASSWORD = process.env.SEED_DEMO_PASSWORD ?? "SmartMedic@2026";
 
