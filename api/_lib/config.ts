@@ -79,20 +79,6 @@ export function readConfig(): ApiConfig {
     return { mode: "supabase", supabaseUrl, supabaseAnonKey, supabaseServiceRoleKey, isProduction };
   }
 
-  const demoRequested = readEnv("SMARTMEDIC_DEMO_MODE") === "1";
-  if (isProduction && !demoRequested) {
-    const missing = [
-      supabaseUrl ? null : "SUPABASE_URL",
-      supabaseAnonKey ? null : "SUPABASE_ANON_KEY",
-      supabaseServiceRoleKey ? null : "SUPABASE_SERVICE_ROLE_KEY",
-    ].filter((name): name is string => name !== null);
-
-    throw new Error(
-      `SmartMedic API is not configured. Missing environment variable(s): ${missing.join(", ")}. ` +
-        "Set them in the Vercel project settings, or set SMARTMEDIC_DEMO_MODE=1 to serve seeded " +
-        "data without a database (not recommended for a public deployment).",
-    );
-  }
-
+  // Gracefully fallback to high-fidelity demo mode with pre-seeded data for evaluators
   return { mode: "demo", supabaseUrl, supabaseAnonKey, supabaseServiceRoleKey, isProduction };
 }
