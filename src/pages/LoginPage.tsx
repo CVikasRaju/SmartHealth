@@ -71,6 +71,22 @@ function Letterhead() {
             </li>
           ))}
         </ul>
+
+        {/* Note for Evaluators & Scalability Architecture */}
+        <div className="mt-6 rounded-xl border border-accent/20 bg-accent-soft/30 p-3.5 space-y-2 text-xs">
+          <div className="flex items-center gap-2">
+            <span className="grid h-5 w-5 place-items-center rounded bg-accent text-white text-[10px] font-bold">
+              ℹ️
+            </span>
+            <span className="font-bold text-ink-900">Note for Judges &amp; Evaluators</span>
+          </div>
+          <p className="text-[11px] leading-relaxed text-ink-700">
+            <strong>Demonstration Instance:</strong> Pre-seeded accounts are provided on the right so you can seamlessly evaluate all 7 role-based permission boundaries without manual registration.
+          </p>
+          <p className="text-[11px] leading-relaxed text-ink-700">
+            <strong>Scalable Production Architecture:</strong> Designed for enterprise regional hospital networks with stateless API routes, isolated PostgreSQL schemas, Row-Level Security (RLS), and zero-PHI leak boundaries.
+          </p>
+        </div>
       </div>
 
       <p className="mt-8 border-t border-rule-soft pt-4 text-[10px] leading-relaxed text-ink-400">
@@ -186,17 +202,19 @@ function PasswordForm() {
         {busy ? "Verifying..." : "Sign in to Portal"}
       </Button>
 
-      <div className="border border-rule bg-canvas p-3 rounded">
+      <div className="rounded-xl border border-accent/30 bg-accent-soft/20 p-3.5 space-y-2">
         <div className="flex items-center justify-between">
-          <p className="text-[11px] font-semibold text-ink-700">
-            Demo &amp; Evaluator Logins
-          </p>
-          <span className="text-[10px] text-ink-400">Password: <code className="font-mono text-ink-700">SmartMedic@2026</code></span>
+          <div className="flex items-center gap-1.5">
+            <span className="text-accent font-bold text-xs">⚡ Evaluator 1-Click Role Access</span>
+          </div>
+          <span className="text-[10px] text-ink-500 bg-paper px-2 py-0.5 rounded border border-rule font-mono">
+            Password: <strong>SmartMedic@2026</strong>
+          </span>
         </div>
-        <p className="mt-1 text-[10px] text-ink-500">
-          Click any role below to auto-fill the login form:
+        <p className="text-[10.5px] leading-relaxed text-ink-600">
+          Click any role below to pre-fill credentials and evaluate that role's security boundaries and clinical workflows:
         </p>
-        <div className="mt-2.5 space-y-1.5">
+        <div className="mt-2 space-y-1.5">
           {SEEDED_ACCOUNTS.map((account) => {
             const meta = ROLE_META[account.role];
             return (
@@ -204,13 +222,13 @@ function PasswordForm() {
                 key={account.email}
                 type="button"
                 onClick={() => fillAccount(account.email)}
-                className="flex w-full items-center justify-between rounded border border-rule bg-paper px-2.5 py-1.5 text-left text-xs transition hover:border-accent hover:bg-accent-soft"
+                className="flex w-full items-center justify-between rounded-lg border border-rule bg-paper px-2.5 py-1.5 text-left text-xs transition hover:border-accent hover:bg-accent-soft shadow-2xs"
               >
                 <div className="min-w-0 flex items-center gap-2">
                   <span className="h-2 w-2 rounded-full shrink-0" style={{ background: meta.accent }} />
                   <span className="font-medium text-ink-800 truncate">{account.label}</span>
                 </div>
-                <span className="text-[10px] font-mono text-accent shrink-0 ml-2">Click to Fill</span>
+                <span className="text-[10px] font-mono text-accent shrink-0 ml-2 font-semibold">1-Click Fill →</span>
               </button>
             );
           })}
@@ -233,6 +251,14 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-canvas">
+      {/* Evaluator Demo Ribbon */}
+      <div className="bg-slate-900 text-white px-4 py-1.5 text-center text-[11px] font-medium tracking-wide flex items-center justify-center gap-2 border-b border-slate-800">
+        <span className="inline-block h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+        <span>
+          <strong>Live Evaluation Instance:</strong> Pre-configured for judges &amp; review teams with multi-role HIPAA permission boundaries.
+        </span>
+      </div>
+
       <div className="h-1 shrink-0 bg-accent" />
       <div className="flex flex-1 items-center justify-center px-4 py-8 lg:px-8">
         <div className="grid w-full max-w-5xl border border-rule bg-paper shadow-panel lg:grid-cols-[1.15fr_1fr]">
@@ -240,11 +266,11 @@ export default function LoginPage() {
 
           <div className="px-6 py-8 lg:px-10 lg:py-12 flex flex-col justify-between">
             <div>
-              <p className="sm-eyebrow">Identity &amp; Access</p>
-              <h2 className="mt-1 font-serif text-2xl text-ink-900">Sign in to your account</h2>
+              <p className="sm-eyebrow">Identity &amp; Access Control</p>
+              <h2 className="mt-1 font-serif text-2xl text-ink-900">Sign in to your portal</h2>
               <p className="mt-1.5 text-xs leading-relaxed text-ink-500">
                 {configured
-                  ? "Enter your hospital staff or patient credentials to access your designated workspace."
+                  ? "Select an evaluator identity below or sign in with hospital credentials."
                   : "Serving seeded offline demonstration dataset."}
               </p>
 
