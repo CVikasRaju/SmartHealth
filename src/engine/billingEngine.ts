@@ -24,7 +24,11 @@ export function roundMoney(value: number): number {
   return Math.round(value * 100) / 100;
 }
 
-export function lineSubtotal(item: InvoiceItem): number {
+/**
+ * Line total. Accepts any value with a quantity and a unit price so invoice
+ * builders can price a draft row before it has been assigned an id.
+ */
+export function lineSubtotal(item: Pick<InvoiceItem, "quantity" | "unitPrice">): number {
   return roundMoney(item.quantity * item.unitPrice);
 }
 
