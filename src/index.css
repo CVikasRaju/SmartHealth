@@ -3,8 +3,54 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
+  :root,
+  html[data-theme="light"] {
     color-scheme: light;
+    --color-canvas: 244 242 238;
+    --color-paper: 255 255 255;
+    --color-paper-tint: 236 232 225;
+    --color-paper-subtle: 240 237 230;
+    --color-rule: 220 213 203;
+    --color-rule-soft: 233 228 220;
+    --color-rule-strong: 168 159 147;
+    --color-ink-900: 27 31 36;
+    --color-ink-800: 44 50 58;
+    --color-ink-700: 66 75 85;
+    --color-ink-600: 90 101 114;
+    --color-ink-500: 116 129 144;
+    --color-ink-400: 150 162 176;
+    --color-ink-300: 198 207 217;
+    --color-accent: 26 59 80;
+    --color-accent-soft: 230 238 244;
+    --color-accent-deep: 15 38 54;
+    --color-accent-hover: 34 76 102;
+    --shadow-panel-color: 27 31 36;
+  }
+
+  html.dark,
+  html[data-theme="dark"],
+  :root.dark,
+  .dark {
+    color-scheme: dark;
+    --color-canvas: 11 17 30;
+    --color-paper: 18 28 45;
+    --color-paper-tint: 24 36 56;
+    --color-paper-subtle: 30 45 69;
+    --color-rule: 34 50 75;
+    --color-rule-soft: 24 37 56;
+    --color-rule-strong: 59 79 110;
+    --color-ink-900: 248 250 252;
+    --color-ink-800: 241 245 249;
+    --color-ink-700: 226 232 240;
+    --color-ink-600: 203 213 225;
+    --color-ink-500: 148 163 184;
+    --color-ink-400: 100 116 139;
+    --color-ink-300: 71 85 105;
+    --color-accent: 56 189 248;
+    --color-accent-soft: 14 39 68;
+    --color-accent-deep: 2 132 199;
+    --color-accent-hover: 125 211 252;
+    --shadow-panel-color: 0 0 0;
   }
 
   html,
@@ -14,56 +60,66 @@
   }
 
   body {
-    @apply bg-canvas text-ink-700 antialiased;
-    font-size: 13px;
+    @apply bg-canvas text-ink-800 antialiased selection:bg-accent-soft selection:text-accent;
+    font-size: 14px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
-  /* Document headings are set in a book serif, the way a printed report is. */
+  /* Document and section headings */
   h1,
   h2,
-  h3 {
-    @apply font-serif text-ink-900;
-    font-weight: 600;
+  h3,
+  h4 {
+    @apply text-ink-900 tracking-tight;
   }
 
-  /* Numbers in a clinical record line up column-wise. */
+  /* Numbers in clinical and financial tables */
   table,
   .tabular-nums {
     font-variant-numeric: tabular-nums;
   }
 
   ::-webkit-scrollbar {
-    width: 11px;
-    height: 11px;
+    width: 8px;
+    height: 8px;
   }
 
   ::-webkit-scrollbar-track {
-    background: #f2f3f5;
+    background: transparent;
   }
 
   ::-webkit-scrollbar-thumb {
-    background: #c2c6cc;
-    border: 3px solid #f2f3f5;
+    background: #cbd5e1;
+    border-radius: 9999px;
+  }
+
+  .dark ::-webkit-scrollbar-thumb {
+    background: #334155;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: #a1a7af;
+    background: #94a3b8;
   }
 
   :focus-visible {
-    @apply outline-none ring-1 ring-accent ring-offset-1 ring-offset-paper;
+    @apply outline-none ring-2 ring-accent/40 ring-offset-2 ring-offset-paper;
   }
 }
 
 @layer components {
   /* Sheet: the ruled surface every screen is printed on. */
   .sm-panel {
-    @apply border border-rule bg-paper shadow-panel;
+    @apply rounded-lg border border-rule bg-paper shadow-panel;
+  }
+
+  .apple-card {
+    @apply rounded-lg border border-rule bg-paper shadow-card p-5 transition-all duration-150;
   }
 
   .sm-input {
-    @apply w-full border border-rule bg-paper px-2 py-1 text-sm text-ink-900
-      placeholder:text-ink-300 transition focus:border-accent focus:outline-none
+    @apply w-full rounded border border-rule bg-paper px-2.5 py-1.5 text-xs text-ink-900
+      placeholder:text-ink-400 transition focus:border-accent focus:outline-none
       focus:ring-1 focus:ring-accent/30 disabled:bg-canvas disabled:text-ink-500;
   }
 
@@ -72,7 +128,7 @@
   }
 
   .sm-chip {
-    @apply inline-flex items-center gap-1.5 border px-2 py-0.5 text-[10px] font-semibold
+    @apply inline-flex items-center gap-1.5 rounded border px-2 py-0.5 text-[10px] font-semibold
       uppercase tracking-[0.08em];
   }
 
@@ -83,18 +139,18 @@
   }
 
   .sm-td {
-    @apply border-b border-rule-soft px-2.5 py-1.5 align-middle text-sm text-ink-700;
+    @apply border-b border-rule-soft px-2.5 py-1.5 align-middle text-xs text-ink-700;
   }
 
-  /* Double rule under the masthead, the way a letterhead is ruled. */
+  /* Double rule under the masthead, the way an institutional letterhead is ruled. */
   .sm-masthead-rule {
-    border-bottom: 1px solid theme("colors.rule.DEFAULT");
-    box-shadow: 0 3px 0 -1px theme("colors.rule.DEFAULT");
+    border-bottom: 1px solid rgb(var(--color-rule));
+    box-shadow: 0 3px 0 -1px rgb(var(--color-rule));
   }
 
   /* Small-caps eyebrow used above every section heading. */
   .sm-eyebrow {
-    @apply text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-400;
+    @apply text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-500;
   }
 }
 
@@ -131,7 +187,6 @@
 
   .print-break-inside-avoid {
     break-inside: avoid !important;
-    page-break-inside: avoid !important;
   }
 
   .print-sheet {

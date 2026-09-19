@@ -267,11 +267,11 @@ function PatientHeader() {
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <div className="flex items-center gap-3">
-              <h2 className="text-lg font-semibold tracking-tight text-ink-900">{patient.name}</h2>
+              <h2 className="font-serif text-xl font-semibold tracking-tight text-ink-900">{patient.name}</h2>
               <button
                 type="button"
                 onClick={() => setIsQueryModalOpen(true)}
-                className="no-print inline-flex items-center gap-1 rounded-full border border-accent/30 bg-accent-soft px-2.5 py-0.5 text-[11px] font-semibold text-accent hover:bg-accent/15 transition"
+                className="no-print inline-flex items-center gap-1 rounded border border-accent/40 bg-accent-soft px-2.5 py-0.5 text-[11px] font-semibold text-accent hover:bg-accent-soft/80 transition"
               >
                 <Icon name="bolt" size={12} />
                 Ask Doctor / Helpline
@@ -297,7 +297,7 @@ function PatientHeader() {
 
         <div className="mt-4 grid gap-3 sm:grid-cols-3">
           {/* Conditions on Record with Recovery / Resolution Option */}
-          <div className="rounded-lg border border-rule bg-paper p-3">
+          <div className="rounded border border-rule bg-paper p-3 shadow-panel">
             <div className="flex items-center justify-between">
               <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-500">
                 Active Conditions ({activeConditions.length})
@@ -313,7 +313,7 @@ function PatientHeader() {
 
             <ul className="mt-2 space-y-1.5">
               {activeConditions.length === 0 ? (
-                <li className="text-xs text-emerald-700 font-medium">✨ No active chronic conditions on record.</li>
+                <li className="text-xs text-risk-normal font-medium">No active chronic conditions on record.</li>
               ) : (
                 activeConditions.map((condition) => (
                   <li key={condition} className="flex items-center justify-between gap-2 text-xs text-ink-700">
@@ -322,7 +322,7 @@ function PatientHeader() {
                       <button
                         type="button"
                         onClick={() => actions.resolvePatientCondition(patient.id, condition, "resolve")}
-                        className="rounded border border-emerald-300 bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-800 hover:bg-emerald-100"
+                        className="rounded border border-risk-normal/40 bg-risk-normal/[0.08] px-1.5 py-0.5 text-[10px] font-semibold text-risk-normal hover:bg-risk-normal/[0.15]"
                       >
                         ✓ Mark Recovered
                       </button>
@@ -364,12 +364,12 @@ function PatientHeader() {
             ) : null}
           </div>
 
-          <div className="rounded-lg border border-rule bg-paper p-3">
+          <div className="rounded border border-rule bg-paper p-3 shadow-panel">
             <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-500">
               Values to Review with Doctor
             </p>
             {outOfRange.length === 0 ? (
-              <p className="mt-2 text-xs text-emerald-700 font-medium">
+              <p className="mt-2 text-xs text-risk-normal font-medium">
                 Every recognised value currently sits inside its reference range.
               </p>
             ) : (
@@ -377,7 +377,7 @@ function PatientHeader() {
                 {outOfRange.slice(0, 4).map((trend) => (
                   <li key={trend.normalizedKey} className="flex items-center justify-between gap-2 text-xs">
                     <span className="truncate text-ink-700">{trend.testName}</span>
-                    <span className="shrink-0 tabular-nums font-semibold text-orange-700">
+                    <span className="shrink-0 tabular-nums font-semibold text-risk-high">
                       {formatNumber(trend.latest, trend.latest % 1 === 0 ? 0 : 1)} {trend.unit}
                     </span>
                   </li>
@@ -386,7 +386,7 @@ function PatientHeader() {
             )}
           </div>
 
-          <div className="rounded-lg border border-rule bg-paper p-3">
+          <div className="rounded border border-rule bg-paper p-3 shadow-panel">
             <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-500">Emergency & Care Contact</p>
             <p className="mt-2 text-xs font-semibold text-ink-900">{patient.emergencyContact.name}</p>
             <p className="text-[11px] text-ink-500">

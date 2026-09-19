@@ -8,8 +8,23 @@
       content="SmartMedic - a hospital operations record unifying role-based clinical workflows, predictive medicine shortage intelligence, and plain-language medical report simplification."
     />
     <title>SmartMedic · Hospital Operations Record</title>
+    <script>
+      (function() {
+        try {
+          var saved = localStorage.getItem("smartmedic_theme");
+          var isDark = saved === "dark" || (!saved && window.matchMedia("(prefers-color-scheme: dark)").matches);
+          if (isDark) {
+            document.documentElement.classList.add("dark");
+            document.documentElement.setAttribute("data-theme", "dark");
+          } else {
+            document.documentElement.classList.remove("dark");
+            document.documentElement.setAttribute("data-theme", "light");
+          }
+        } catch (e) {}
+      })();
+    </script>
   </head>
-  <body class="bg-canvas">
+  <body class="bg-canvas text-ink-800">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

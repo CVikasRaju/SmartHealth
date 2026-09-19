@@ -122,17 +122,17 @@ function VisualBiomarkerBar({
 
   return (
     <div className="mt-2 w-full max-w-md">
-      <div className="relative h-2 w-full rounded-full bg-slate-100 overflow-hidden border border-slate-200/60">
+      <div className="relative h-2.5 w-full rounded-full bg-slate-100 overflow-hidden border border-slate-200/80 shadow-inner">
         {/* Under-range zone */}
-        <div className="absolute left-0 top-0 bottom-0 bg-amber-100" style={{ width: `${normalLeftPct}%` }} />
+        <div className="absolute left-0 top-0 bottom-0 bg-amber-100/90" style={{ width: `${normalLeftPct}%` }} />
         {/* Normal target zone */}
         <div
-          className="absolute top-0 bottom-0 bg-emerald-200 border-x border-emerald-400/40"
+          className="absolute top-0 bottom-0 bg-emerald-200/90 border-x border-emerald-400/50"
           style={{ left: `${normalLeftPct}%`, width: `${normalWidthPct}%` }}
         />
         {/* Over-range zone */}
         <div
-          className="absolute right-0 top-0 bottom-0 bg-orange-100"
+          className="absolute right-0 top-0 bottom-0 bg-orange-100/90"
           style={{ left: `${normalLeftPct + normalWidthPct}%`, right: 0 }}
         />
       </div>
@@ -140,23 +140,23 @@ function VisualBiomarkerBar({
       {/* Pointer & Value Needle */}
       <div className="relative h-4 w-full">
         <div
-          className="absolute top-0 -translate-x-1/2 flex flex-col items-center"
+          className="absolute top-0 -translate-x-1/2 flex flex-col items-center transition-all duration-300"
           style={{ left: `${valuePct}%` }}
         >
           <div
-            className="w-0 h-0 border-l-[3.5px] border-l-transparent border-r-[3.5px] border-r-transparent border-b-[5px]"
+            className="w-0 h-0 border-l-[4px] border-l-transparent border-r-[4px] border-r-transparent border-b-[6px]"
             style={{ borderBottomColor: pinColor }}
           />
-          <span className="text-[9px] font-bold tabular-nums leading-none" style={{ color: pinColor }}>
+          <span className="text-[10px] font-bold tabular-nums leading-none" style={{ color: pinColor }}>
             {value}
           </span>
         </div>
       </div>
 
       {/* Range legend */}
-      <div className="flex justify-between items-center text-[9px] text-ink-400 px-0.5">
+      <div className="flex justify-between items-center text-[9px] font-medium text-ink-400 px-1">
         <span>Low (&lt;{min})</span>
-        <span className="font-medium text-emerald-700">Target: {min}–{max} {unit}</span>
+        <span className="font-semibold text-emerald-800">Target Range: {min}–{max} {unit}</span>
         <span>High (&gt;{max})</span>
       </div>
     </div>
@@ -1186,74 +1186,74 @@ export default function ReportSimplifier({
                     </div>
                   </div>
 
-                  {/* Interpretation Tabs (Interactive on screen) */}
-                  <div className="no-print flex flex-wrap items-center gap-1.5 border-b border-rule-soft pb-2">
+                  {/* Interpretation Tabs */}
+                  <div className="no-print flex flex-wrap items-center gap-1 border-b border-rule pb-px">
                     <button
                       type="button"
                       onClick={() => setActiveAiTab("summary")}
                       className={cx(
-                        "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition",
+                        "inline-flex items-center gap-1.5 border-b-2 px-3 py-1.5 text-xs font-semibold transition",
                         activeAiTab === "summary"
-                          ? "bg-accent text-white shadow-xs"
-                          : "bg-paper text-ink-600 hover:bg-slate-100",
+                          ? "border-accent bg-accent-soft text-accent"
+                          : "border-transparent text-ink-600 hover:border-rule hover:text-ink-900",
                       )}
                     >
                       <Icon name="info" size={13} />
-                      Big-Picture Overview
+                      Clinical Overview
                     </button>
                     <button
                       type="button"
                       onClick={() => setActiveAiTab("organs")}
                       className={cx(
-                        "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition",
+                        "inline-flex items-center gap-1.5 border-b-2 px-3 py-1.5 text-xs font-semibold transition",
                         activeAiTab === "organs"
-                          ? "bg-accent text-white shadow-xs"
-                          : "bg-paper text-ink-600 hover:bg-slate-100",
+                          ? "border-accent bg-accent-soft text-accent"
+                          : "border-transparent text-ink-600 hover:border-rule hover:text-ink-900",
                       )}
                     >
                       <Icon name="dashboard" size={13} />
-                      Organ Systems Impact ({aiAnalysis?.organSystems?.length ?? 0})
+                      Organ Systems ({aiAnalysis?.organSystems?.length ?? 0})
                     </button>
                     <button
                       type="button"
                       onClick={() => setActiveAiTab("doctor")}
                       className={cx(
-                        "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition",
+                        "inline-flex items-center gap-1.5 border-b-2 px-3 py-1.5 text-xs font-semibold transition",
                         activeAiTab === "doctor"
-                          ? "bg-accent text-white shadow-xs"
-                          : "bg-paper text-ink-600 hover:bg-slate-100",
+                          ? "border-accent bg-accent-soft text-accent"
+                          : "border-transparent text-ink-600 hover:border-rule hover:text-ink-900",
                       )}
                     >
                       <Icon name="user" size={13} />
-                      Doctor Discussion Guide
+                      Questions for Doctor
                     </button>
                     <button
                       type="button"
                       onClick={() => setActiveAiTab("lifestyle")}
                       className={cx(
-                        "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition",
+                        "inline-flex items-center gap-1.5 border-b-2 px-3 py-1.5 text-xs font-semibold transition",
                         activeAiTab === "lifestyle"
-                          ? "bg-accent text-white shadow-xs"
-                          : "bg-paper text-ink-600 hover:bg-slate-100",
+                          ? "border-accent bg-accent-soft text-accent"
+                          : "border-transparent text-ink-600 hover:border-rule hover:text-ink-900",
                       )}
                     >
                       <Icon name="shield" size={13} />
-                      Lifestyle & Nutrition
+                      Diet &amp; Lifestyle
                     </button>
                     <button
                       type="button"
                       onClick={() => setActiveAiTab("chat")}
                       className={cx(
-                        "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition",
+                        "inline-flex items-center gap-1.5 border-b-2 px-3 py-1.5 text-xs font-semibold transition",
                         activeAiTab === "chat"
-                          ? "bg-accent text-white shadow-xs"
-                          : "bg-paper text-ink-600 hover:bg-slate-100",
+                          ? "border-accent bg-accent-soft text-accent"
+                          : "border-transparent text-ink-600 hover:border-rule hover:text-ink-900",
                       )}
                     >
                       <Icon name="bolt" size={13} />
                       Ask AI Assistant
                       {chatMessages.length > 0 ? (
-                        <span className="ml-1 rounded-full bg-accent-soft px-1.5 text-[9px] font-bold text-accent">
+                        <span className="rounded bg-accent px-1.5 py-0.2 text-[10px] font-bold text-white">
                           {chatMessages.length}
                         </span>
                       ) : null}
@@ -1263,7 +1263,7 @@ export default function ReportSimplifier({
                   {/* TAB CONTENT 1: Big Picture Overview */}
                   {(activeAiTab === "summary" || !activeAiTab) && (
                     <div className="space-y-3 pt-1">
-                      <div className="rounded-lg border border-accent/20 bg-accent-soft/30 p-3 text-xs leading-relaxed text-ink-800">
+                      <div className="rounded border border-accent/20 bg-accent-soft/30 p-3 text-xs leading-relaxed text-ink-800">
                         <div className="flex items-center gap-2 mb-1.5 font-bold text-ink-900">
                           <span>{aiAnalysis?.overallHealthHeadline}</span>
                         </div>
@@ -1272,7 +1272,7 @@ export default function ReportSimplifier({
 
                       {/* Correlated Patterns */}
                       {aiAnalysis?.correlatedPatterns && aiAnalysis.correlatedPatterns.length > 0 ? (
-                        <div className="rounded-lg border border-rule-soft bg-paper p-3">
+                        <div className="rounded border border-rule bg-paper p-3 shadow-panel">
                           <h5 className="text-[11px] font-bold uppercase tracking-wider text-ink-800 mb-2 flex items-center gap-1.5">
                             <Icon name="trends" size={13} />
                             Key Clinical Findings & Cross-Marker Patterns
@@ -1296,18 +1296,18 @@ export default function ReportSimplifier({
                       {(aiAnalysis?.organSystems ?? []).map((sys) => (
                         <div
                           key={sys.system}
-                          className="rounded-xl border border-rule-soft bg-paper p-3.5 space-y-2 shadow-xs"
+                          className="rounded border border-rule bg-paper p-3.5 space-y-2 shadow-panel"
                         >
                           <div className="flex items-center justify-between gap-2">
                             <span className="text-xs font-bold text-ink-900">{sys.name}</span>
                             <span
                               className={cx(
-                                "rounded-full px-2 py-0.5 text-[10px] font-semibold",
+                                "rounded px-2 py-0.5 text-[10px] font-semibold border",
                                 sys.status === "optimal"
-                                  ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
+                                  ? "bg-risk-normal/[0.08] text-risk-normal border-risk-normal/30"
                                   : sys.status === "attention"
-                                  ? "bg-orange-100 text-orange-800 border border-orange-200"
-                                  : "bg-red-100 text-red-800 border border-red-200",
+                                  ? "bg-risk-high/[0.08] text-risk-high border-risk-high/30"
+                                  : "bg-risk-critical/[0.08] text-risk-critical border-risk-critical/30",
                               )}
                             >
                               {sys.statusLabel}
@@ -1316,7 +1316,7 @@ export default function ReportSimplifier({
 
                           <p className="text-xs text-ink-600 leading-relaxed">{sys.summary}</p>
 
-                          <div className="rounded-md bg-canvas/60 p-2 space-y-1 text-[11px]">
+                          <div className="rounded bg-canvas/60 p-2 space-y-1 text-[11px] border border-rule-soft">
                             <span className="font-semibold text-ink-500 uppercase text-[9px] block">
                               Tested: {sys.testedBiomarkers.join(" · ")}
                             </span>
@@ -1333,7 +1333,7 @@ export default function ReportSimplifier({
 
                   {/* TAB CONTENT 3: Doctor Discussion Guide */}
                   {activeAiTab === "doctor" && (
-                    <div className="rounded-xl border border-rule bg-paper p-4 space-y-3 pt-3">
+                    <div className="rounded border border-rule bg-paper p-4 space-y-3 shadow-panel">
                       <div className="flex items-center justify-between gap-2">
                         <div>
                           <h5 className="text-xs font-bold text-ink-900 uppercase tracking-wider">
@@ -1345,7 +1345,7 @@ export default function ReportSimplifier({
                         </div>
                         <Button size="sm" variant="secondary" onClick={handleCopyQuestions}>
                           <Icon name={copiedQuestions ? "check" : "download"} size={13} />
-                          {copiedQuestions ? "Copied!" : "Copy Questions"}
+                          {copiedQuestions ? "Copied" : "Copy Questions"}
                         </Button>
                       </div>
 
@@ -1353,9 +1353,9 @@ export default function ReportSimplifier({
                         {(aiAnalysis?.doctorQuestions ?? []).map((question, qIdx) => (
                           <div
                             key={qIdx}
-                            className="flex items-start gap-2.5 rounded-lg border border-rule-soft bg-canvas/40 p-2.5 text-xs text-ink-800"
+                            className="flex items-start gap-2.5 rounded border border-rule-soft bg-canvas/40 p-2.5 text-xs text-ink-800"
                           >
-                            <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-accent-soft text-accent text-[11px] font-bold">
+                            <span className="grid h-5 w-5 shrink-0 place-items-center rounded bg-accent-soft text-accent text-[11px] font-bold">
                               {qIdx + 1}
                             </span>
                             <span className="flex-1 leading-relaxed">{question}</span>
@@ -1367,7 +1367,7 @@ export default function ReportSimplifier({
 
                   {/* TAB CONTENT 4: Lifestyle & Nutrition Guidance */}
                   {activeAiTab === "lifestyle" && (
-                    <div className="rounded-xl border border-rule bg-paper p-4 space-y-3 pt-3">
+                    <div className="rounded border border-rule bg-paper p-4 space-y-3 shadow-panel">
                       <div>
                         <h5 className="text-xs font-bold text-ink-900 uppercase tracking-wider">
                           Everyday Nutrition & Wellness Pointers
@@ -1381,11 +1381,11 @@ export default function ReportSimplifier({
                         {(aiAnalysis?.lifestyleTips ?? []).map((tip, tIdx) => (
                           <div
                             key={tIdx}
-                            className="rounded-lg border border-emerald-200/70 bg-emerald-50/30 p-3 text-xs leading-relaxed text-ink-800 space-y-1"
+                            className="rounded border border-risk-normal/30 bg-risk-normal/[0.04] p-3 text-xs leading-relaxed text-ink-800 space-y-1"
                           >
-                            <div className="flex items-center gap-1.5 font-bold text-emerald-900">
-                              <Icon name="check" size={13} className="text-emerald-700" />
-                              <span>Wellness Tip #{tIdx + 1}</span>
+                            <div className="flex items-center gap-1.5 font-bold text-risk-normal">
+                              <Icon name="check" size={13} />
+                              <span>Wellness Pointer #{tIdx + 1}</span>
                             </div>
                             <p>{tip}</p>
                           </div>
@@ -1393,8 +1393,8 @@ export default function ReportSimplifier({
                       </div>
 
                       {aiAnalysis?.redFlags && aiAnalysis.redFlags.length > 0 ? (
-                        <div className="rounded-lg border border-risk-critical/30 bg-rose-50/70 p-3 text-xs text-rose-900 space-y-1">
-                          <span className="font-bold flex items-center gap-1.5 text-rose-800">
+                        <div className="rounded border border-risk-critical/30 bg-risk-critical/[0.04] p-3 text-xs text-risk-critical space-y-1">
+                          <span className="font-bold flex items-center gap-1.5">
                             <Icon name="alert" size={14} /> When to Contact Doctor Promptly
                           </span>
                           <ul className="list-disc pl-5 space-y-0.5 text-[11px]">
@@ -1409,7 +1409,7 @@ export default function ReportSimplifier({
 
                   {/* TAB CONTENT 5: Interactive Ask AI Chat Assistant */}
                   {activeAiTab === "chat" && (
-                    <div className="rounded-xl border border-rule bg-paper p-4 space-y-3 pt-3">
+                    <div className="rounded border border-rule bg-paper p-4 space-y-3 shadow-panel">
                       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-rule-soft pb-2">
                         <div>
                           <h5 className="text-xs font-bold text-ink-900 uppercase tracking-wider">
@@ -1422,17 +1422,17 @@ export default function ReportSimplifier({
                         <div className="flex items-center gap-1.5">
                           <span
                             className={cx(
-                              "rounded-full px-2 py-0.5 text-[10px] font-semibold border",
+                              "rounded px-2 py-0.5 text-[10px] font-semibold border",
                               hasGeminiKey
-                                ? "bg-emerald-50 text-emerald-800 border-emerald-200"
-                                : "bg-slate-100 text-ink-600 border-slate-200",
+                                ? "bg-risk-normal/[0.08] text-risk-normal border-risk-normal/30"
+                                : "bg-canvas text-ink-600 border-rule",
                             )}
                           >
                             {hasGeminiKey
                               ? apiKeyInput.startsWith("sk-or-") || apiKeyInput.startsWith("sk-")
-                                ? "🟢 Powered by OpenRouter (Live LLM)"
-                                : "🟢 Powered by Live Gemini AI"
-                              : "⚡ SmartMedic Clinical Intelligence"}
+                                ? "Connected: OpenRouter (Live LLM)"
+                                : "Connected: Gemini 1.5 Flash"
+                              : "SmartMedic Clinical Engine"}
                           </span>
                           {!hasGeminiKey ? (
                             <button
@@ -1448,42 +1448,42 @@ export default function ReportSimplifier({
 
                       {/* Preset Quick Chips */}
                       <div className="flex flex-wrap items-center gap-1.5">
-                        <span className="text-[10px] font-semibold text-ink-400">Quick Prompts:</span>
+                        <span className="text-[10px] font-semibold text-ink-400">Suggested Topics:</span>
                         <button
                           type="button"
                           onClick={() => void handleAskQuestion("What dietary changes can help improve my lab values?")}
-                          className="rounded-full border border-rule bg-canvas px-2.5 py-0.5 text-[11px] font-medium text-ink-700 hover:border-accent hover:text-accent transition"
+                          className="rounded border border-rule bg-canvas px-2.5 py-0.5 text-[11px] font-medium text-ink-700 hover:border-accent hover:text-accent transition"
                         >
-                          🥗 Best foods for these numbers?
+                          Diet &amp; nutrition advice
                         </button>
                         <button
                           type="button"
                           onClick={() => void handleAskQuestion("Can I do gym workouts and cardio safely with these results?")}
-                          className="rounded-full border border-rule bg-canvas px-2.5 py-0.5 text-[11px] font-medium text-ink-700 hover:border-accent hover:text-accent transition"
+                          className="rounded border border-rule bg-canvas px-2.5 py-0.5 text-[11px] font-medium text-ink-700 hover:border-accent hover:text-accent transition"
                         >
-                          🏃 Safe to exercise?
+                          Exercise &amp; workout safety
                         </button>
                         <button
                           type="button"
                           onClick={() => void handleAskQuestion("Is there anything serious in this lab report that I should worry about?")}
-                          className="rounded-full border border-rule bg-canvas px-2.5 py-0.5 text-[11px] font-medium text-ink-700 hover:border-accent hover:text-accent transition"
+                          className="rounded border border-rule bg-canvas px-2.5 py-0.5 text-[11px] font-medium text-ink-700 hover:border-accent hover:text-accent transition"
                         >
-                          🔍 Is this report normal or worrying?
+                          General report overview
                         </button>
                       </div>
 
                       {/* Chat Message History */}
-                      <div className="max-h-[520px] min-h-[200px] overflow-y-auto rounded-xl border border-rule-soft bg-canvas/40 p-3 sm:p-4 space-y-3">
+                      <div className="max-h-[520px] min-h-[200px] overflow-y-auto rounded border border-rule-soft bg-canvas/30 p-3 sm:p-4 space-y-3">
                         {chatMessages.length === 0 ? (
-                          <div className="text-center py-8 space-y-2">
-                            <span className="grid h-10 w-10 place-items-center rounded-full bg-accent-soft text-accent mx-auto text-lg">
-                              💬
+                          <div className="text-center py-8 space-y-1.5">
+                            <span className="grid h-9 w-9 place-items-center rounded bg-accent-soft text-accent mx-auto text-base">
+                              <Icon name="report" size={18} />
                             </span>
                             <p className="text-xs font-semibold text-ink-800">
                               Ask any question about {patient?.name ? `${patient.name}'s` : "your"} lab report
                             </p>
                             <p className="text-[11px] text-ink-500 max-w-sm mx-auto">
-                              Pick a prompt above or type freely to get personalized food advice, workout safety pointers, or doctor questions.
+                              Select a suggested topic above or enter your question below to receive personalized clinical context.
                             </p>
                           </div>
                         ) : (
@@ -1495,13 +1495,13 @@ export default function ReportSimplifier({
                               <div
                                 key={mIdx}
                                 className={cx(
-                                  "flex flex-col text-xs leading-relaxed max-w-[94%] sm:max-w-[88%] rounded-2xl p-3.5 transition",
+                                  "flex flex-col text-xs leading-relaxed max-w-[94%] sm:max-w-[88%] rounded p-3.5 transition",
                                   isUser
-                                    ? "ml-auto bg-accent text-white rounded-br-none shadow-xs"
-                                    : "mr-auto bg-paper border border-rule/80 text-ink-900 rounded-bl-none shadow-xs space-y-1.5",
+                                    ? "ml-auto bg-accent text-white shadow-panel"
+                                    : "mr-auto bg-paper border border-rule text-ink-900 shadow-panel space-y-1.5",
                                 )}
                               >
-                                <div className="flex items-center justify-between gap-2 border-b border-white/20 pb-1 mb-1">
+                                <div className="flex items-center justify-between gap-2 border-b border-rule-soft pb-1 mb-1">
                                   <span className={cx("font-semibold text-[10px]", isUser ? "text-white/80" : "text-ink-500")}>
                                     {isUser ? "You" : "SmartMedic Clinical AI"} · {msg.time}
                                   </span>
@@ -1532,9 +1532,9 @@ export default function ReportSimplifier({
                           })
                         )}
                         {chatLoading ? (
-                          <div className="mr-auto bg-paper border border-rule text-ink-700 rounded-2xl p-3 text-xs flex items-center gap-2.5 shadow-xs animate-pulse">
-                            <span className="animate-spin text-accent text-sm">⚡</span>
-                            <span className="font-medium">SmartMedic AI is consulting clinical knowledge & lab values...</span>
+                          <div className="mr-auto bg-paper border border-rule text-ink-700 rounded p-3 text-xs flex items-center gap-2.5 shadow-panel animate-pulse">
+                            <span className="h-3 w-3 animate-spin border border-ink-400 border-t-accent rounded-full" />
+                            <span className="font-medium">SmartMedic AI is analysing clinical data and reference ranges...</span>
                           </div>
                         ) : null}
                         <div ref={chatEndRef} />
@@ -1554,7 +1554,7 @@ export default function ReportSimplifier({
                             value={chatInput}
                             onChange={(e) => setChatInput(e.target.value)}
                             placeholder="e.g. What does my fasting glucose mean? What foods should I eat?"
-                            className="flex-1 rounded-lg border border-rule bg-paper px-3 py-2 text-xs text-ink-900 placeholder:text-ink-400 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+                            className="sm-input flex-1"
                           />
                           <Button type="submit" size="sm" variant="primary" disabled={!chatInput.trim() || chatLoading}>
                             <Icon name="bolt" size={13} />
@@ -1572,11 +1572,8 @@ export default function ReportSimplifier({
                             </Button>
                           ) : null}
                         </div>
-                        <p className="text-[10px] text-ink-400 flex items-center gap-1">
-                          <span>⚕️</span>
-                          <span>
-                            <strong>Note:</strong> AI answers provide educational information. Never adjust prescriptions or treatments without your doctor's confirmation.
-                          </span>
+                        <p className="text-[10px] text-ink-400">
+                          <strong>Note:</strong> AI explanations provide educational reference only. Always confirm medication dosages and treatment plans with your doctor.
                         </p>
                       </form>
                     </div>
@@ -1659,10 +1656,10 @@ export default function ReportSimplifier({
                             <div
                               key={field.id}
                               className={cx(
-                                "print-break-inside-avoid rounded-xl border transition",
+                                "print-break-inside-avoid rounded border transition",
                                 isWarning
-                                  ? "border-orange-200/80 bg-orange-50/[0.15] shadow-sm"
-                                  : "border-rule bg-paper",
+                                  ? "border-risk-high/40 bg-risk-high/[0.03] shadow-panel"
+                                  : "border-rule bg-paper shadow-panel",
                               )}
                             >
                               {/* Card Header / Summary Row */}

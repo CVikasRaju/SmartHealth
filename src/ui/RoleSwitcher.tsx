@@ -35,10 +35,10 @@ export default function RoleSwitcher() {
         aria-haspopup="dialog"
         aria-expanded={open}
         title="User Account & Session"
-        className="flex items-center gap-2.5 border border-rule-strong bg-paper py-1 pl-1.5 pr-2.5 transition hover:bg-canvas rounded-sm"
+        className="flex items-center gap-2.5 rounded-sm border border-rule-strong bg-paper py-1 pl-1.5 pr-2.5 transition hover:bg-canvas"
       >
         <span
-          className="grid h-7 w-7 place-items-center text-[11px] font-bold text-white shadow-xs rounded-xs"
+          className="grid h-7 w-7 place-items-center rounded-xs text-[11px] font-bold text-white shadow-xs"
           style={{ background: meta.accent }}
         >
           {meta.label.slice(0, 2).toUpperCase()}
@@ -56,13 +56,13 @@ export default function RoleSwitcher() {
         <div
           role="dialog"
           aria-label="User Account Information"
-          className="absolute right-0 z-40 mt-2 w-[22rem] animate-rise-in overflow-hidden border border-rule-strong bg-paper shadow-sheet rounded"
+          className="absolute right-0 z-40 mt-2 w-[22rem] animate-rise-in overflow-hidden rounded border border-rule-strong bg-paper shadow-sheet"
         >
           {/* User profile header */}
           <div className="border-b border-rule bg-canvas p-4">
             <div className="flex items-center gap-3">
               <span
-                className="grid h-10 w-10 shrink-0 place-items-center text-sm font-bold text-white rounded"
+                className="grid h-10 w-10 shrink-0 place-items-center rounded text-sm font-bold text-white"
                 style={{ background: meta.accent }}
               >
                 {meta.label.slice(0, 2).toUpperCase()}
@@ -75,14 +75,14 @@ export default function RoleSwitcher() {
               </div>
             </div>
 
-            <div className="mt-3 flex flex-wrap items-center gap-2 pt-2 border-t border-rule-soft">
+            <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-rule-soft pt-2">
               <span
-                className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded border border-rule bg-paper"
+                className="rounded border border-rule bg-paper px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider"
                 style={{ color: meta.accent }}
               >
                 {meta.label}
               </span>
-              <span className="text-[11px] text-ink-600 font-medium">
+              <span className="text-[11px] font-medium text-ink-600">
                 {currentRole === "superadmin"
                   ? "Health Network Governance"
                   : hospital
@@ -93,9 +93,9 @@ export default function RoleSwitcher() {
           </div>
 
           {/* Privacy & Scope Information */}
-          <div className="p-4 space-y-3">
-            <div className="rounded border border-rule bg-canvas/60 p-3 text-[11px] leading-relaxed text-ink-600">
-              <p className="font-semibold text-ink-800 flex items-center gap-1.5 mb-1">
+          <div className="space-y-3 p-4">
+            <div className="rounded-xl border border-rule/70 bg-canvas/40 p-3 text-[11px] leading-relaxed text-ink-600">
+              <p className="mb-1 flex items-center gap-1.5 font-semibold text-ink-800">
                 <Icon name="check" size={13} className="text-risk-normal" />
                 Zero-Trust Data Isolation Active
               </p>

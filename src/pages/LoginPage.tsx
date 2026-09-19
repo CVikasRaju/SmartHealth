@@ -11,6 +11,7 @@ import { BRANDING } from "@/config/branding";
 import { useSession } from "@/store/SessionProvider";
 import { ROLE_META } from "@/ui/theme";
 import Icon from "@/ui/Icon";
+import ThemeToggle from "@/ui/ThemeToggle";
 import { Button, Field, TextInput } from "@/ui/primitives";
 import { cx } from "@/utils/format";
 
@@ -116,8 +117,8 @@ function DemoIdentityPicker() {
 
   return (
     <div className="space-y-3">
-      <div className="border border-rule bg-canvas px-3 py-2.5 text-[11px] leading-relaxed text-ink-600 rounded">
-        <span className="font-semibold text-ink-800">Local Evaluation Mode.</span> Select any role below to instantly enter the portal:
+      <div className="rounded border border-rule bg-canvas/60 p-2.5 text-[11px] leading-relaxed text-ink-600">
+        <span className="font-semibold text-ink-800">Local Evaluation Mode.</span> Select any role below to enter the portal:
       </div>
 
       <div className="divide-y divide-rule-soft border border-rule rounded overflow-hidden">
@@ -250,24 +251,21 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-canvas">
-      {/* Evaluator Demo Ribbon */}
-      <div className="bg-slate-900 text-white px-4 py-1.5 text-center text-[11px] font-medium tracking-wide flex items-center justify-center gap-2 border-b border-slate-800">
-        <span className="inline-block h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-        <span>
-          <strong>Live Evaluation Instance:</strong> Pre-configured for judges &amp; review teams with multi-role HIPAA permission boundaries.
-        </span>
-      </div>
-
+    <div className="flex min-h-screen flex-col bg-canvas text-ink-900">
+      {/* Institutional spine */}
       <div className="h-1 shrink-0 bg-accent" />
+
       <div className="flex flex-1 items-center justify-center px-4 py-8 lg:px-8">
-        <div className="grid w-full max-w-5xl border border-rule bg-paper shadow-panel lg:grid-cols-[1.15fr_1fr]">
+        <div className="grid w-full max-w-5xl rounded-lg border border-rule bg-paper shadow-sheet lg:grid-cols-[1.15fr_1fr] overflow-hidden">
           <Letterhead />
 
-          <div className="px-6 py-8 lg:px-10 lg:py-12 flex flex-col justify-between">
+          <div className="flex flex-col justify-between px-6 py-8 lg:px-10 lg:py-12">
             <div>
-              <p className="sm-eyebrow">Identity &amp; Access Control</p>
-              <h2 className="mt-1 font-serif text-2xl text-ink-900">Sign in to your portal</h2>
+              <div className="flex items-center justify-between">
+                <p className="sm-eyebrow">Identity &amp; Access Control</p>
+                <ThemeToggle />
+              </div>
+              <h2 className="mt-1 font-serif text-2xl font-semibold text-ink-900">Sign in to your portal</h2>
               <p className="mt-1.5 text-xs leading-relaxed text-ink-500">
                 {configured
                   ? "Select an evaluator identity below or sign in with hospital credentials."
@@ -279,14 +277,14 @@ export default function LoginPage() {
               </div>
 
               {error ? (
-                <p className="mt-4 border border-risk-critical/40 bg-risk-critical/[0.05] px-3 py-2 text-[11px] leading-relaxed text-risk-critical">
+                <p className="mt-4 rounded border border-risk-critical/40 bg-risk-critical/[0.05] p-3 text-[11px] leading-relaxed text-risk-critical">
                   {error}
                 </p>
               ) : null}
             </div>
 
             <p className="mt-6 border-t border-rule-soft pt-4 text-[10px] leading-relaxed text-ink-400">
-              Session Mode: <span className="font-medium text-ink-700">{mode}</span>.{" "}
+              Session Mode: <span className="font-semibold text-ink-700">{mode}</span>.{" "}
               {configured
                 ? "Secured with Supabase Auth cryptographic verification."
                 : "Seeded demo mode with simulated role-based isolation."}

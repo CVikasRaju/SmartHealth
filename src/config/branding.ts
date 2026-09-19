@@ -24,7 +24,7 @@ export const BRANDING = {
   organisation: "SmartMedic Health Network · Formulary & Clinical Governance",
 
   /** Institutional accent. Mirrors `colors.accent` in tailwind.config.js. */
-  accent: "#14416b",
+  accent: "#1a3b50",
 
   /** Printed in the footer and on every exported report. */
   provenance: "Demonstration dataset. Not connected to any live clinical system.",

@@ -27,7 +27,7 @@ export function Panel({
   className?: string;
   padded?: boolean;
 }) {
-  return <section className={cx("sm-panel", padded && "p-3.5", className)}>{children}</section>;
+  return <section className={cx("sm-panel", padded && "p-4 sm:p-5", className)}>{children}</section>;
 }
 
 export function PanelHeader({
@@ -44,12 +44,12 @@ export function PanelHeader({
   className?: string;
 }) {
   return (
-    <header className={cx("mb-3 flex items-start justify-between gap-4 border-b border-rule-soft pb-2.5", className)}>
-      <div className="flex min-w-0 items-start gap-2.5">
-        {icon ? <span className="mt-0.5 text-ink-400">{icon}</span> : null}
+    <header className={cx("mb-4 flex items-start justify-between gap-4 border-b border-rule-soft pb-3", className)}>
+      <div className="flex min-w-0 items-start gap-3">
+        {icon ? <span className="mt-0.5 text-accent">{icon}</span> : null}
         <div className="min-w-0">
-          <h2 className="text-[15px] leading-snug">{title}</h2>
-          {subtitle ? <p className="mt-1 text-xs leading-relaxed text-ink-500">{subtitle}</p> : null}
+          <h2 className="text-base font-bold tracking-tight text-ink-900">{title}</h2>
+          {subtitle ? <p className="mt-0.5 text-xs leading-relaxed text-ink-500">{subtitle}</p> : null}
         </div>
       </div>
       {actions ? <div className="flex shrink-0 items-center gap-2">{actions}</div> : null}
@@ -59,9 +59,9 @@ export function PanelHeader({
 
 export function SectionTitle({ children, hint }: { children: ReactNode; hint?: ReactNode }) {
   return (
-    <div className="mb-2.5 flex items-baseline gap-2">
-      <h3 className="sm-eyebrow text-ink-500">{children}</h3>
-      {hint ? <span className="text-[11px] text-ink-400">{hint}</span> : null}
+    <div className="mb-3 flex items-baseline gap-2">
+      <h3 className="sm-eyebrow">{children}</h3>
+      {hint ? <span className="text-xs text-ink-400">{hint}</span> : null}
     </div>
   );
 }
@@ -78,10 +78,10 @@ export function EmptyState({
   className?: string;
 }) {
   return (
-    <div className={cx("border border-dashed border-rule-strong bg-paper-tint px-5 py-6 text-center", className)}>
-      <p className="text-sm font-semibold text-ink-700">{title}</p>
+    <div className={cx("border border-dashed border-rule-strong/40 bg-canvas/40 px-6 py-7 text-center rounded", className)}>
+      <p className="text-xs font-semibold text-ink-800">{title}</p>
       {description ? <p className="mx-auto mt-1 max-w-md text-xs leading-relaxed text-ink-500">{description}</p> : null}
-      {action ? <div className="mt-4 flex justify-center">{action}</div> : null}
+      {action ? <div className="mt-3 flex justify-center">{action}</div> : null}
     </div>
   );
 }
@@ -100,8 +100,8 @@ export function Chip({
   className?: string;
 }) {
   return (
-    <span className={cx("sm-chip", token ? token.chip : "border-rule bg-canvas text-ink-500", className)}>
-      {token ? <span className="h-1.5 w-1.5" style={{ background: token.hex }} /> : null}
+    <span className={cx("sm-chip", token ? token.chip : "border-rule bg-canvas text-ink-600", className)}>
+      {token ? <span className="h-1.5 w-1.5 rounded-full" style={{ background: token.hex }} /> : null}
       {children ?? token?.label}
     </span>
   );
@@ -137,14 +137,14 @@ export function ProgressBar({
   const ratio = max > 0 ? Math.min(1, Math.max(0, value / max)) : 0;
   return (
     <div
-      className={cx("w-full overflow-hidden border border-rule-soft bg-canvas", className)}
+      className={cx("w-full overflow-hidden rounded-sm border border-rule-soft bg-canvas", className)}
       style={{ height }}
       role="progressbar"
       aria-valuenow={Math.round(ratio * 100)}
       aria-valuemin={0}
       aria-valuemax={100}
     >
-      <div className="h-full transition-[width] duration-500" style={{ width: `${ratio * 100}%`, background: color }} />
+      <div className="h-full transition-[width] duration-300" style={{ width: `${ratio * 100}%`, background: color }} />
     </div>
   );
 }
@@ -181,7 +181,7 @@ export function SignalMeter({
 }
 
 /* ------------------------------------------------------------------ */
-/* Stat tiles                                                          */
+/* Stat tiles and key-value grids                                      */
 /* ------------------------------------------------------------------ */
 
 export function StatTile({
@@ -189,68 +189,57 @@ export function StatTile({
   value,
   hint,
   tone = "default",
-  footer,
+  trend,
+  className,
 }: {
   label: string;
   value: ReactNode;
   hint?: ReactNode;
-  tone?: "default" | "danger" | "warning" | "success" | "accent";
-  footer?: ReactNode;
+  tone?: "default" | "accent" | "danger" | "warn" | "warning" | "success" | "neutral";
+  trend?: ReactNode;
+  className?: string;
 }) {
   const tones: Record<string, string> = {
-    default: "text-ink-900",
-    danger: "text-risk-critical",
-    warning: "text-risk-high",
-    success: "text-risk-normal",
-    accent: "text-accent",
+    default: "border-rule bg-paper",
+    neutral: "border-rule bg-paper",
+    accent: "border-accent/30 bg-accent-soft text-accent",
+    danger: "border-risk-critical/30 bg-risk-critical/[0.04]",
+    warn: "border-risk-high/30 bg-risk-high/[0.04]",
+    warning: "border-risk-high/30 bg-risk-high/[0.04]",
+    success: "border-risk-normal/30 bg-risk-normal/[0.04]",
   };
 
   return (
-    <div className="border border-rule bg-paper p-3">
-      <p className="sm-eyebrow">{label}</p>
-      <p className={cx("mt-1 font-serif text-3xl leading-none", tones[tone])}>{value}</p>
+    <div className={cx("rounded border p-3.5 shadow-panel", tones[tone] ?? tones.default, className)}>
+      <div className="flex items-start justify-between gap-2">
+        <span className="sm-eyebrow">{label}</span>
+        {trend}
+      </div>
+      <div className="mt-1 flex items-baseline gap-2">
+        <span className="font-serif text-2xl font-semibold tracking-tight text-ink-900">{value}</span>
+      </div>
       {hint ? <p className="mt-1 text-[11px] leading-relaxed text-ink-500">{hint}</p> : null}
-      {footer ? <div className="mt-2.5 border-t border-rule-soft pt-2">{footer}</div> : null}
     </div>
   );
 }
 
-/**
- * Ruled summary strip.
- *
- * A report states its headline figures in one banded line rather than four
- * floating cards, so this renders a single sheet divided by vertical rules.
- */
-/** Static column map: Tailwind cannot see a class built from a template literal. */
-const STRIP_COLUMNS: Record<number, string> = {
-  1: "sm:grid-cols-1",
-  2: "sm:grid-cols-2",
-  3: "sm:grid-cols-3",
-  4: "sm:grid-cols-4",
-  5: "sm:grid-cols-5",
-  6: "sm:grid-cols-6",
-};
-
 export function MetricStrip({
   items,
+  metrics,
   className,
 }: {
-  items: { label: string; value: ReactNode; hint?: ReactNode; tone?: string }[];
+  items?: { label: string; value: ReactNode; hint?: ReactNode; tone?: string }[];
+  metrics?: { label: string; value: ReactNode; hint?: ReactNode; tone?: string }[];
   className?: string;
 }) {
+  const list = items ?? metrics ?? [];
   return (
-    <div
-      className={cx(
-        "grid divide-y divide-rule-soft border border-rule bg-paper sm:divide-y-0 sm:divide-x",
-        STRIP_COLUMNS[items.length] ?? "sm:grid-cols-4",
-        className,
-      )}
-    >
-      {items.map((item) => (
-        <div key={item.label} className="p-3">
-          <p className="sm-eyebrow">{item.label}</p>
-          <p className={cx("mt-1 font-serif text-3xl leading-none", item.tone ?? "text-ink-900")}>{item.value}</p>
-          {item.hint ? <p className="mt-1 text-[11px] leading-relaxed text-ink-500">{item.hint}</p> : null}
+    <div className={cx("grid grid-cols-2 gap-3 sm:grid-cols-4", className)}>
+      {list.map((metric) => (
+        <div key={metric.label} className="rounded border border-rule bg-paper p-3 shadow-panel">
+          <p className="sm-eyebrow">{metric.label}</p>
+          <p className="mt-1 font-serif text-xl font-semibold text-ink-900">{metric.value}</p>
+          {metric.hint ? <p className="mt-0.5 text-[10px] text-ink-400">{metric.hint}</p> : null}
         </div>
       ))}
     </div>
@@ -259,11 +248,11 @@ export function MetricStrip({
 
 export function KeyValue({ items }: { items: { label: string; value: ReactNode }[] }) {
   return (
-    <dl className="grid gap-x-6 gap-y-2 sm:grid-cols-2">
+    <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
       {items.map((item) => (
         <div key={item.label} className="min-w-0">
           <dt className="sm-eyebrow">{item.label}</dt>
-          <dd className="mt-0.5 truncate text-sm text-ink-900">{item.value}</dd>
+          <dd className="mt-0.5 truncate text-xs font-medium text-ink-900">{item.value}</dd>
         </div>
       ))}
     </dl>
@@ -289,11 +278,11 @@ export interface ButtonProps {
 }
 
 const BUTTON_VARIANTS: Record<ButtonVariant, string> = {
-  primary: "border border-accent bg-accent text-white hover:bg-accent-deep font-semibold",
-  secondary: "border border-rule-strong bg-paper text-ink-900 hover:bg-canvas",
-  ghost: "border border-transparent text-ink-500 hover:border-rule hover:bg-canvas hover:text-ink-900",
-  danger: "border border-risk-critical/50 bg-risk-critical/[0.07] text-risk-critical hover:bg-risk-critical/[0.14]",
-  success: "border border-risk-normal/50 bg-risk-normal/[0.07] text-risk-normal hover:bg-risk-normal/[0.14]",
+  primary: "border border-accent bg-accent text-white hover:bg-accent-deep transition",
+  secondary: "border border-rule bg-paper text-ink-800 hover:border-rule-strong hover:bg-canvas transition",
+  ghost: "border border-transparent text-ink-600 hover:bg-canvas hover:text-ink-900 transition",
+  danger: "border border-risk-critical/40 bg-risk-critical/[0.06] text-risk-critical hover:bg-risk-critical/[0.12] transition",
+  success: "border border-risk-normal/40 bg-risk-normal/[0.06] text-risk-normal hover:bg-risk-normal/[0.12] transition",
 };
 
 export function Button({
@@ -314,8 +303,8 @@ export function Button({
       disabled={disabled}
       onClick={onClick}
       className={cx(
-        "inline-flex items-center justify-center gap-1.5 transition disabled:cursor-not-allowed disabled:opacity-40",
-        size === "sm" ? "px-2 py-0.5 text-xs" : "px-2.5 py-1 text-sm",
+        "inline-flex items-center justify-center gap-1.5 rounded font-medium disabled:cursor-not-allowed disabled:opacity-40",
+        size === "sm" ? "px-2.5 py-1 text-xs" : "px-3.5 py-1.5 text-xs",
         BUTTON_VARIANTS[variant],
         fullWidth && "w-full",
         className,
@@ -347,8 +336,8 @@ export function Field({
     <label className={cx("block", className)}>
       <span className="sm-label">{label}</span>
       {children}
-      {error ? <span className="mt-1 block text-[11px] font-medium text-risk-critical">{error}</span> : null}
-      {!error && hint ? <span className="mt-1 block text-[11px] text-ink-400">{hint}</span> : null}
+      {error ? <span className="mt-1 block text-xs font-medium text-risk-critical">{error}</span> : null}
+      {!error && hint ? <span className="mt-1 block text-xs text-ink-400">{hint}</span> : null}
     </label>
   );
 }
@@ -455,7 +444,7 @@ export function Tabs<T extends string>({
   className?: string;
 }) {
   return (
-    <div className={cx("flex flex-wrap items-end gap-0 border-b border-rule", className)}>
+    <div className={cx("flex flex-wrap gap-1 border-b border-rule pb-px", className)}>
       {tabs.map((tab) => {
         const isActive = active === tab.id;
         return (
@@ -464,15 +453,15 @@ export function Tabs<T extends string>({
             type="button"
             onClick={() => onChange(tab.id)}
             className={cx(
-              "-mb-px inline-flex items-center gap-1.5 border-b-2 px-3 py-2 text-xs transition",
+              "inline-flex items-center gap-1.5 border-b-2 px-3 py-1.5 text-xs font-semibold transition",
               isActive
-                ? "border-accent bg-paper font-semibold text-accent"
-                : "border-transparent text-ink-500 hover:border-rule hover:text-ink-900",
+                ? "border-accent bg-accent-soft text-accent"
+                : "border-transparent text-ink-600 hover:border-rule hover:text-ink-900",
             )}
           >
             {tab.label}
             {tab.badge !== undefined ? (
-              <span className="border border-rule bg-canvas px-1.5 text-[10px] font-semibold text-ink-500">
+              <span className={cx("rounded px-1.5 py-0.2 text-[10px]", isActive ? "bg-accent text-white" : "bg-canvas text-ink-500")}>
                 {tab.badge}
               </span>
             ) : null}
@@ -516,24 +505,29 @@ export function Modal({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-ink-900/45 p-4 sm:p-8">
+    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/40 p-4 sm:p-6">
       <div
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className={cx("animate-rise-in w-full border border-rule-strong bg-paper shadow-sheet", width)}
+        className={cx("animate-rise-in w-full rounded-lg border border-rule-strong bg-paper shadow-sheet overflow-hidden", width)}
       >
-        <div className="flex items-start justify-between gap-4 border-b border-rule bg-canvas px-4 py-3">
+        <div className="flex items-start justify-between gap-4 border-b border-rule bg-canvas/40 px-5 py-3.5">
           <div>
-            <h2 className="text-base leading-tight">{title}</h2>
-            {subtitle ? <p className="mt-0.5 text-xs text-ink-500">{subtitle}</p> : null}
+            <h2 className="text-sm font-bold text-ink-900 leading-tight">{title}</h2>
+            {subtitle ? <p className="mt-0.5 text-xs text-ink-500 leading-relaxed">{subtitle}</p> : null}
           </div>
-          <Button variant="ghost" size="sm" onClick={onClose} title="Close">
+          <button
+            type="button"
+            onClick={onClose}
+            className="grid h-6 w-6 place-items-center rounded text-ink-400 hover:bg-canvas hover:text-ink-800 transition"
+            title="Close"
+          >
             ✕
-          </Button>
+          </button>
         </div>
-        <div className="max-h-[68vh] overflow-y-auto p-4">{children}</div>
-        {footer ? <div className="flex flex-wrap justify-end gap-2 border-t border-rule bg-canvas px-4 py-3">{footer}</div> : null}
+        <div className="max-h-[70vh] overflow-y-auto p-5">{children}</div>
+        {footer ? <div className="flex flex-wrap justify-end gap-2 border-t border-rule bg-canvas/30 px-5 py-3">{footer}</div> : null}
       </div>
     </div>
   );
