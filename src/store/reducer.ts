@@ -30,6 +30,7 @@ import type {
 } from "@/types";
 import { applyWardTransfer, dispenseStock } from "@/engine/shortageEngine";
 import { derivePaymentStatus } from "@/engine/billingEngine";
+import { createSeedDatabase } from "@/data/mockData";
 
 /** Who performed an action, captured for the immutable audit ledger. */
 export interface ActorRef {
@@ -498,7 +499,14 @@ export function appReducer(state: AppState, action: AppAction): AppState {
       };
 
     case "state/replaceAll":
-      return { db: action.db, session: action.session, activeView: action.activeView };
+      return {
+        db: {
+          ...action.db,
+          hospitals: action.db.hospitals ?? createSeedDatabase().hospitals,
+        },
+        session: action.session,
+        activeView: action.activeView,
+      };
 
     case "state/merge": {
       const db: DatabaseState = { ...state.db };

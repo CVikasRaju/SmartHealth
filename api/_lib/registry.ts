@@ -97,9 +97,10 @@ export function toColumns(
   value: Record<string, unknown>,
   skip: string[] = [],
 ): Record<string, unknown> {
+  const skipSet = new Set(["hospitalId", ...skip]);
   const row: Record<string, unknown> = {};
   for (const [key, raw] of Object.entries(value)) {
-    if (raw === undefined || skip.includes(key)) continue;
+    if (raw === undefined || skipSet.has(key)) continue;
     row[camelToSnake(key)] = raw;
   }
   return row;
@@ -328,6 +329,9 @@ const INTEGER_COLUMNS: Partial<Record<CollectionName, string[]>> = {
 
 /** Coerce a hydrated parent object's numeric fields to numbers. */
 export function coerceParent(collection: CollectionName, value: Record<string, unknown>): void {
+  if (!value.hospitalId) {
+    value.hospitalId = "hosp-kmc-mgl";
+  }
   for (const key of NUMERIC_COLUMNS[collection] ?? []) {
     if (key in value) value[key] = num(value[key]);
   }

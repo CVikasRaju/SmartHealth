@@ -13,7 +13,7 @@
  * rendered in the viewer, in the printable sheet, and in the exported file.
  */
 
-import { useCallback, useMemo, useRef, useState, type DragEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from "react";
 import type { BiomarkerStatus, BiomarkerTrend, ExtractedField, MedicalReport, Patient, ReportCategory } from "@/types";
 import { REPORT_CATEGORY_LABELS } from "@/types";
 import { useApp } from "@/store/AppStore";
@@ -28,6 +28,14 @@ import {
   runDeterministicExtraction,
   summariseFields,
 } from "@/engine/reportEngine";
+import {
+  generateAiReportAnalysis,
+  askAiAboutReport,
+  synthesizeClinicalReportAnalysis,
+  getStoredGeminiApiKey,
+  setStoredGeminiApiKey,
+  type AiReportAnalysis,
+} from "@/engine/aiReportExplainer";
 import {
   createSampleScan,
   engineKindFor,
@@ -192,6 +200,94 @@ export default function ReportSimplifier({
     displayedReports.find((report) => report.id === selectedId) ?? displayedReports[0] ?? null;
 
   const summary = useMemo(() => summariseFields(selected?.extractedFields ?? []), [selected]);
+
+  const [aiAnalysis, setAiAnalysis] = useState<AiReportAnalysis | null>(null);
+  const [generatingAi, setGeneratingAi] = useState(false);
+  const [activeAiTab, setActiveAiTab] = useState<"summary" | "organs" | "doctor" | "lifestyle" | "chat">("summary");
+  const [chatInput, setChatInput] = useState("");
+  const [chatMessages, setChatMessages] = useState<{ role: "user" | "ai"; text: string; time: string }[]>([]);
+  const [chatLoading, setChatLoading] = useState(false);
+  const [copiedQuestions, setCopiedQuestions] = useState(false);
+  const [showKeyModal, setShowKeyModal] = useState(false);
+  const [apiKeyInput, setApiKeyInput] = useState(() => getStoredGeminiApiKey());
+  const [hasGeminiKey, setHasGeminiKey] = useState(() => Boolean(getStoredGeminiApiKey()));
+
+  useEffect(() => {
+    if (selected) {
+      if (selected.aiAnalysis) {
+        setAiAnalysis(selected.aiAnalysis);
+      } else {
+        const analysis = synthesizeClinicalReportAnalysis(selected, patient);
+        setAiAnalysis(analysis);
+      }
+    } else {
+      setAiAnalysis(null);
+    }
+    setChatMessages([]);
+  }, [selected, patient]);
+
+  const handleSaveApiKey = useCallback((newKey: string) => {
+    setStoredGeminiApiKey(newKey);
+    setApiKeyInput(newKey);
+    setHasGeminiKey(Boolean(newKey.trim()));
+    setShowKeyModal(false);
+    if (selected) {
+      void (async () => {
+        setGeneratingAi(true);
+        try {
+          const res = await generateAiReportAnalysis(selected, patient);
+          setAiAnalysis(res);
+        } finally {
+          setGeneratingAi(false);
+        }
+      })();
+    }
+  }, [selected, patient]);
+
+  const handleRunAiAnalysis = useCallback(async () => {
+    if (!selected) return;
+    setGeneratingAi(true);
+    try {
+      const res = await generateAiReportAnalysis(selected, patient);
+      setAiAnalysis(res);
+    } finally {
+      setGeneratingAi(false);
+    }
+  }, [selected, patient]);
+
+  const handleAskQuestion = useCallback(async (qText?: string) => {
+    const text = (qText ?? chatInput).trim();
+    if (!text || !selected || chatLoading) return;
+
+    const userMsg = { role: "user" as const, text, time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) };
+    setChatMessages((prev) => [...prev, userMsg]);
+    setChatInput("");
+    setChatLoading(true);
+
+    try {
+      const response = await askAiAboutReport(text, selected, patient);
+      const aiMsg = { role: "ai" as const, text: response, time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) };
+      setChatMessages((prev) => [...prev, aiMsg]);
+    } catch {
+      const fallbackMsg = {
+        role: "ai" as const,
+        text: "I was unable to analyze this question right now. Please discuss with your doctor.",
+        time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      };
+      setChatMessages((prev) => [...prev, fallbackMsg]);
+    } finally {
+      setChatLoading(false);
+    }
+  }, [chatInput, selected, chatLoading, patient]);
+
+  const handleCopyQuestions = useCallback(() => {
+    if (!aiAnalysis?.doctorQuestions?.length) return;
+    const text = `Questions for My Doctor (SmartMedic Report ${selected?.fileName}):\n\n` +
+      aiAnalysis.doctorQuestions.map((q, i) => `${i + 1}. ${q}`).join("\n\n");
+    void navigator.clipboard.writeText(text);
+    setCopiedQuestions(true);
+    setTimeout(() => setCopiedQuestions(false), 2500);
+  }, [aiAnalysis, selected]);
 
   /** Biomarkers with at least two readings are the only ones worth charting. */
   const chartableTrends = useMemo(() => trends.filter((trend) => trend.history.length >= 1), [trends]);
@@ -737,58 +833,502 @@ export default function ReportSimplifier({
                 ) : null}
 
                 {/* ---------------------------------------------------------- */}
-                {/* FRIENDLY PATIENT SUMMARY BOX                               */}
+                {/* COMPREHENSIVE AI CLINICAL REPORT INTERPRETATION            */}
                 {/* ---------------------------------------------------------- */}
-                <div className="rounded-xl border border-rule bg-paper p-4 shadow-sm">
-                  <div className="flex items-center justify-between border-b border-rule-soft pb-2.5">
-                    <div className="flex items-center gap-2">
-                      <span className="grid h-6 w-6 place-items-center rounded-full bg-accent-soft text-accent">
-                        <Icon name="info" size={14} />
+                <div className="rounded-xl border border-accent/30 bg-gradient-to-br from-paper to-accent-soft/20 p-4 sm:p-5 shadow-sm space-y-4">
+                  {/* Top Bar */}
+                  <div className="flex flex-wrap items-center justify-between gap-3 border-b border-rule-soft pb-3">
+                    <div className="flex items-center gap-2.5">
+                      <span className="grid h-7 w-7 place-items-center rounded-lg bg-accent text-white shadow-sm">
+                        <Icon name="bolt" size={15} />
                       </span>
-                      <h4 className="text-xs font-semibold uppercase tracking-wider text-ink-900">
-                        At a Glance — What This Report Means
-                      </h4>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h4 className="text-sm font-bold tracking-tight text-ink-900">
+                            SmartMedic AI Report Interpretation
+                          </h4>
+                          <span
+                            className={cx(
+                              "rounded-full px-2 py-0.5 text-[10px] font-semibold border",
+                              hasGeminiKey
+                                ? "bg-emerald-50 text-emerald-800 border-emerald-300"
+                                : "bg-accent-soft text-accent border-accent/20",
+                            )}
+                          >
+                            {hasGeminiKey
+                              ? apiKeyInput.startsWith("sk-or-") || apiKeyInput.startsWith("sk-")
+                                ? "🟢 OpenRouter (Live LLM)"
+                                : "🟢 Gemini 1.5 Flash (Live AI)"
+                              : "⚡ SmartMedic Clinical Engine (Local)"}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-ink-500">
+                          Holistic explanation of whole lab panel, organ system impacts, and doctor discussion points
+                        </p>
+                      </div>
                     </div>
-                    <span className="text-[11px] text-ink-400">
-                      {summary.total} biomarkers analyzed
-                    </span>
+
+                    <div className="no-print flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant={hasGeminiKey ? "secondary" : "ghost"}
+                        onClick={() => setShowKeyModal((v) => !v)}
+                      >
+                        <Icon name="bolt" size={13} />
+                        {hasGeminiKey ? "Configure AI Key" : "⚡ Connect OpenRouter / Gemini"}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="primary"
+                        disabled={generatingAi}
+                        onClick={() => void handleRunAiAnalysis()}
+                      >
+                        <Icon name={generatingAi ? "refresh" : "refresh"} size={13} className={cx(generatingAi && "animate-spin")} />
+                        {generatingAi ? "Analyzing with AI..." : "Re-run AI Analysis"}
+                      </Button>
+                    </div>
                   </div>
 
-                  <p className="mt-3 text-xs leading-relaxed text-ink-700">
-                    {summary.outOfRange === 0 ? (
-                      <span className="font-medium text-emerald-800">
-                        ✨ Great news! All <strong>{summary.total}</strong> tested values sit comfortably within the standard healthy reference ranges.
-                      </span>
-                    ) : (
-                      <span>
-                        We analyzed <strong>{summary.total}</strong> values in this panel.{" "}
-                        <strong className="text-emerald-700">{summary.inRange} values</strong> are within target ranges, and{" "}
-                        <strong className="text-orange-700">{summary.outOfRange} values</strong> sit slightly outside standard reference boundaries. 
-                        Outside-range numbers are very common and should always be discussed with your physician in context with your daily routine and medications.
-                      </span>
-                    )}
-                  </p>
+                  {/* OpenRouter & Gemini API Key Configuration Dropdown Card */}
+                  {showKeyModal ? (
+                    <div className="rounded-xl border border-accent/40 bg-paper p-4 shadow-sm space-y-3">
+                      <div className="flex items-center justify-between border-b border-rule-soft pb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-accent font-bold">✨ Connect AI Model API Key</span>
+                          <span className="rounded bg-emerald-100 px-1.5 py-0.2 text-[9px] font-bold text-emerald-800 uppercase">
+                            OpenRouter & Gemini Supported
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setShowKeyModal(false)}
+                          className="text-ink-400 hover:text-ink-800"
+                        >
+                          <Icon name="close" size={14} />
+                        </button>
+                      </div>
 
-                  <div className="mt-3.5 grid gap-2.5 sm:grid-cols-4">
-                    <div className="rounded-lg border border-rule-soft bg-canvas p-2.5">
+                      <p className="text-xs text-ink-600 leading-relaxed">
+                        Paste your <strong>OpenRouter API key</strong> (<code className="bg-canvas px-1 py-0.5 rounded text-[11px]">sk-or-v1-...</code>) or <strong>Google Gemini key</strong> (<code className="bg-canvas px-1 py-0.5 rounded text-[11px]">AIzaSy...</code>) to enable live real-time LLM reasoning and conversational responses.
+                      </p>
+
+                      <div className="flex flex-wrap gap-3 text-[11px] text-ink-500">
+                        <a
+                          href="https://openrouter.ai/keys"
+                          target="_blank"
+                          rel="noreferrer"
+                          className="font-semibold text-accent underline hover:text-accent-hover"
+                        >
+                          Get OpenRouter Key (openrouter.ai/keys) ↗
+                        </a>
+                        <span>·</span>
+                        <a
+                          href="https://aistudio.google.com/app/apikey"
+                          target="_blank"
+                          rel="noreferrer"
+                          className="font-semibold text-accent underline hover:text-accent-hover"
+                        >
+                          Get Free Google Gemini Key (aistudio.google.com) ↗
+                        </a>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="password"
+                          value={apiKeyInput}
+                          onChange={(e) => setApiKeyInput(e.target.value)}
+                          placeholder="Paste sk-or-v1-... or AIzaSy..."
+                          className="flex-1 rounded-lg border border-rule bg-canvas px-3 py-2 text-xs font-mono text-ink-900 placeholder:text-ink-400 focus:border-accent focus:outline-none"
+                        />
+                        <Button
+                          size="sm"
+                          variant="primary"
+                          disabled={!apiKeyInput.trim()}
+                          onClick={() => handleSaveApiKey(apiKeyInput)}
+                        >
+                          Save & Connect
+                        </Button>
+                        {hasGeminiKey ? (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleSaveApiKey("")}
+                          >
+                            Remove
+                          </Button>
+                        ) : null}
+                      </div>
+
+                      <p className="text-[10px] text-ink-400">
+                        🔒 Key is stored locally in your browser session and never shared with third parties.
+                      </p>
+                    </div>
+                  ) : null}
+
+                  {/* Summary Metric Counters */}
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                    <div className="rounded-lg border border-rule-soft bg-paper/80 p-2.5">
                       <span className="block text-[10px] uppercase font-semibold text-ink-400">Total Analysed</span>
-                      <span className="text-xl font-bold text-ink-900">{summary.total}</span>
+                      <span className="text-lg font-bold text-ink-900">{summary.total} biomarkers</span>
                     </div>
-                    <div className="rounded-lg border border-emerald-200 bg-emerald-50/50 p-2.5">
-                      <span className="block text-[10px] uppercase font-semibold text-emerald-800">Within Range</span>
-                      <span className="text-xl font-bold text-emerald-700">{summary.inRange}</span>
+                    <div className="rounded-lg border border-emerald-200 bg-emerald-50/70 p-2.5">
+                      <span className="block text-[10px] uppercase font-semibold text-emerald-800">Within Normal Range</span>
+                      <span className="text-lg font-bold text-emerald-700">{summary.inRange} normal</span>
                     </div>
-                    <div className="rounded-lg border border-orange-200 bg-orange-50/50 p-2.5">
+                    <div className="rounded-lg border border-orange-200 bg-orange-50/70 p-2.5">
                       <span className="block text-[10px] uppercase font-semibold text-orange-800">Needs Discussion</span>
-                      <span className="text-xl font-bold text-orange-700">{summary.outOfRange}</span>
+                      <span className="text-lg font-bold text-orange-700">{summary.outOfRange} markers</span>
                     </div>
-                    <div className="rounded-lg border border-rule-soft bg-canvas p-2.5">
-                      <span className="block text-[10px] uppercase font-semibold text-ink-400">Markedly High/Low</span>
-                      <span className={cx("text-xl font-bold", summary.critical > 0 ? "text-risk-critical" : "text-ink-500")}>
+                    <div className="rounded-lg border border-rule-soft bg-paper/80 p-2.5">
+                      <span className="block text-[10px] uppercase font-semibold text-ink-400">Markedly Varied</span>
+                      <span className={cx("text-lg font-bold", summary.critical > 0 ? "text-risk-critical" : "text-ink-500")}>
                         {summary.critical}
                       </span>
                     </div>
                   </div>
+
+                  {/* Interpretation Tabs (Interactive on screen) */}
+                  <div className="no-print flex flex-wrap items-center gap-1.5 border-b border-rule-soft pb-2">
+                    <button
+                      type="button"
+                      onClick={() => setActiveAiTab("summary")}
+                      className={cx(
+                        "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition",
+                        activeAiTab === "summary"
+                          ? "bg-accent text-white shadow-xs"
+                          : "bg-paper text-ink-600 hover:bg-slate-100",
+                      )}
+                    >
+                      <Icon name="info" size={13} />
+                      Big-Picture Overview
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveAiTab("organs")}
+                      className={cx(
+                        "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition",
+                        activeAiTab === "organs"
+                          ? "bg-accent text-white shadow-xs"
+                          : "bg-paper text-ink-600 hover:bg-slate-100",
+                      )}
+                    >
+                      <Icon name="dashboard" size={13} />
+                      Organ Systems Impact ({aiAnalysis?.organSystems?.length ?? 0})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveAiTab("doctor")}
+                      className={cx(
+                        "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition",
+                        activeAiTab === "doctor"
+                          ? "bg-accent text-white shadow-xs"
+                          : "bg-paper text-ink-600 hover:bg-slate-100",
+                      )}
+                    >
+                      <Icon name="user" size={13} />
+                      Doctor Discussion Guide
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveAiTab("lifestyle")}
+                      className={cx(
+                        "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition",
+                        activeAiTab === "lifestyle"
+                          ? "bg-accent text-white shadow-xs"
+                          : "bg-paper text-ink-600 hover:bg-slate-100",
+                      )}
+                    >
+                      <Icon name="shield" size={13} />
+                      Lifestyle & Nutrition
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveAiTab("chat")}
+                      className={cx(
+                        "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition",
+                        activeAiTab === "chat"
+                          ? "bg-accent text-white shadow-xs"
+                          : "bg-paper text-ink-600 hover:bg-slate-100",
+                      )}
+                    >
+                      <Icon name="bolt" size={13} />
+                      Ask AI Assistant
+                      {chatMessages.length > 0 ? (
+                        <span className="ml-1 rounded-full bg-accent-soft px-1.5 text-[9px] font-bold text-accent">
+                          {chatMessages.length}
+                        </span>
+                      ) : null}
+                    </button>
+                  </div>
+
+                  {/* TAB CONTENT 1: Big Picture Overview */}
+                  {(activeAiTab === "summary" || !activeAiTab) && (
+                    <div className="space-y-3 pt-1">
+                      <div className="rounded-lg border border-accent/20 bg-accent-soft/30 p-3 text-xs leading-relaxed text-ink-800">
+                        <div className="flex items-center gap-2 mb-1.5 font-bold text-ink-900">
+                          <span>{aiAnalysis?.overallHealthHeadline}</span>
+                        </div>
+                        <p className="whitespace-pre-line text-ink-700">
+                          {aiAnalysis?.executiveSummary}
+                        </p>
+                      </div>
+
+                      {/* Correlated Patterns */}
+                      {aiAnalysis?.correlatedPatterns && aiAnalysis.correlatedPatterns.length > 0 ? (
+                        <div className="rounded-lg border border-rule-soft bg-paper p-3">
+                          <h5 className="text-[11px] font-bold uppercase tracking-wider text-ink-800 mb-2 flex items-center gap-1.5">
+                            <Icon name="trends" size={13} />
+                            Key Clinical Findings & Cross-Marker Patterns
+                          </h5>
+                          <ul className="space-y-1.5 text-xs text-ink-700">
+                            {aiAnalysis.correlatedPatterns.map((pattern, idx) => (
+                              <li key={idx} className="flex items-start gap-2">
+                                <span className="text-accent font-bold mt-0.5">•</span>
+                                <span>{pattern}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ) : null}
+                    </div>
+                  )}
+
+                  {/* TAB CONTENT 2: Organ Systems Impact */}
+                  {activeAiTab === "organs" && (
+                    <div className="grid gap-3 sm:grid-cols-2 pt-1">
+                      {(aiAnalysis?.organSystems ?? []).map((sys) => (
+                        <div
+                          key={sys.system}
+                          className="rounded-xl border border-rule-soft bg-paper p-3.5 space-y-2 shadow-xs"
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-xs font-bold text-ink-900">{sys.name}</span>
+                            <span
+                              className={cx(
+                                "rounded-full px-2 py-0.5 text-[10px] font-semibold",
+                                sys.status === "optimal"
+                                  ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
+                                  : sys.status === "attention"
+                                  ? "bg-orange-100 text-orange-800 border border-orange-200"
+                                  : "bg-red-100 text-red-800 border border-red-200",
+                              )}
+                            >
+                              {sys.statusLabel}
+                            </span>
+                          </div>
+
+                          <p className="text-xs text-ink-600 leading-relaxed">{sys.summary}</p>
+
+                          <div className="rounded-md bg-canvas/60 p-2 space-y-1 text-[11px]">
+                            <span className="font-semibold text-ink-500 uppercase text-[9px] block">
+                              Tested: {sys.testedBiomarkers.join(" · ")}
+                            </span>
+                            {sys.findings.map((finding, fIdx) => (
+                              <p key={fIdx} className="text-ink-700 leading-snug">
+                                → {finding}
+                              </p>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* TAB CONTENT 3: Doctor Discussion Guide */}
+                  {activeAiTab === "doctor" && (
+                    <div className="rounded-xl border border-rule bg-paper p-4 space-y-3 pt-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <div>
+                          <h5 className="text-xs font-bold text-ink-900 uppercase tracking-wider">
+                            Questions to Ask Your Doctor at Your Next Visit
+                          </h5>
+                          <p className="text-[11px] text-ink-500">
+                            These questions are prepared by AI based on your specific lab results to help you get the most out of your consultation.
+                          </p>
+                        </div>
+                        <Button size="sm" variant="secondary" onClick={handleCopyQuestions}>
+                          <Icon name={copiedQuestions ? "check" : "download"} size={13} />
+                          {copiedQuestions ? "Copied!" : "Copy Questions"}
+                        </Button>
+                      </div>
+
+                      <div className="space-y-2">
+                        {(aiAnalysis?.doctorQuestions ?? []).map((question, qIdx) => (
+                          <div
+                            key={qIdx}
+                            className="flex items-start gap-2.5 rounded-lg border border-rule-soft bg-canvas/40 p-2.5 text-xs text-ink-800"
+                          >
+                            <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-accent-soft text-accent text-[11px] font-bold">
+                              {qIdx + 1}
+                            </span>
+                            <span className="flex-1 leading-relaxed">{question}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* TAB CONTENT 4: Lifestyle & Nutrition Guidance */}
+                  {activeAiTab === "lifestyle" && (
+                    <div className="rounded-xl border border-rule bg-paper p-4 space-y-3 pt-3">
+                      <div>
+                        <h5 className="text-xs font-bold text-ink-900 uppercase tracking-wider">
+                          Everyday Nutrition & Wellness Pointers
+                        </h5>
+                        <p className="text-[11px] text-ink-500">
+                          Non-prescriptive educational guidance to support healthy metabolic balance and vitality.
+                        </p>
+                      </div>
+
+                      <div className="grid gap-2.5 sm:grid-cols-2">
+                        {(aiAnalysis?.lifestyleTips ?? []).map((tip, tIdx) => (
+                          <div
+                            key={tIdx}
+                            className="rounded-lg border border-emerald-200/70 bg-emerald-50/30 p-3 text-xs leading-relaxed text-ink-800 space-y-1"
+                          >
+                            <div className="flex items-center gap-1.5 font-bold text-emerald-900">
+                              <Icon name="check" size={13} className="text-emerald-700" />
+                              <span>Wellness Tip #{tIdx + 1}</span>
+                            </div>
+                            <p>{tip}</p>
+                          </div>
+                        ))}
+                      </div>
+
+                      {aiAnalysis?.redFlags && aiAnalysis.redFlags.length > 0 ? (
+                        <div className="rounded-lg border border-risk-critical/30 bg-rose-50/70 p-3 text-xs text-rose-900 space-y-1">
+                          <span className="font-bold flex items-center gap-1.5 text-rose-800">
+                            <Icon name="alert" size={14} /> When to Contact Doctor Promptly
+                          </span>
+                          <ul className="list-disc pl-5 space-y-0.5 text-[11px]">
+                            {aiAnalysis.redFlags.map((rf, rIdx) => (
+                              <li key={rIdx}>{rf}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      ) : null}
+                    </div>
+                  )}
+
+                  {/* TAB CONTENT 5: Interactive Ask AI Chat Assistant */}
+                  {activeAiTab === "chat" && (
+                    <div className="rounded-xl border border-rule bg-paper p-4 space-y-3 pt-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-rule-soft pb-2">
+                        <div>
+                          <h5 className="text-xs font-bold text-ink-900 uppercase tracking-wider">
+                            Ask AI About Your Report
+                          </h5>
+                          <p className="text-[11px] text-ink-500">
+                            Have questions about a specific number, dietary choices, or routine? Ask below for an instant educational explanation.
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <span
+                            className={cx(
+                              "rounded-full px-2 py-0.5 text-[10px] font-semibold border",
+                              hasGeminiKey
+                                ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+                                : "bg-slate-100 text-ink-600 border-slate-200",
+                            )}
+                          >
+                            {hasGeminiKey
+                              ? apiKeyInput.startsWith("sk-or-") || apiKeyInput.startsWith("sk-")
+                                ? "🟢 Powered by OpenRouter (Live LLM)"
+                                : "🟢 Powered by Live Gemini AI"
+                              : "⚡ SmartMedic Clinical Intelligence"}
+                          </span>
+                          {!hasGeminiKey ? (
+                            <button
+                              type="button"
+                              onClick={() => setShowKeyModal(true)}
+                              className="text-[10px] font-semibold text-accent underline hover:text-accent-hover"
+                            >
+                              + Connect API Key
+                            </button>
+                          ) : null}
+                        </div>
+                      </div>
+
+                      {/* Preset Quick Chips */}
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span className="text-[10px] font-semibold text-ink-400">Quick Prompts:</span>
+                        <button
+                          type="button"
+                          onClick={() => void handleAskQuestion("What dietary changes can help improve my lab values?")}
+                          className="rounded-full border border-rule bg-canvas px-2.5 py-0.5 text-[11px] font-medium text-ink-700 hover:border-accent hover:text-accent transition"
+                        >
+                          🥗 Best foods for these numbers?
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void handleAskQuestion("Can I do gym workouts and cardio safely with these results?")}
+                          className="rounded-full border border-rule bg-canvas px-2.5 py-0.5 text-[11px] font-medium text-ink-700 hover:border-accent hover:text-accent transition"
+                        >
+                          🏃 Safe to exercise?
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void handleAskQuestion("Is there anything serious in this lab report that I should worry about?")}
+                          className="rounded-full border border-rule bg-canvas px-2.5 py-0.5 text-[11px] font-medium text-ink-700 hover:border-accent hover:text-accent transition"
+                        >
+                          🔍 Is this report normal or worrying?
+                        </button>
+                      </div>
+
+                      {/* Chat Message History */}
+                      <div className="max-h-60 overflow-y-auto rounded-lg border border-rule-soft bg-canvas/50 p-3 space-y-2.5">
+                        {chatMessages.length === 0 ? (
+                          <p className="text-center py-4 text-xs text-ink-400">
+                            No questions asked yet. Pick a prompt above or type your question below!
+                          </p>
+                        ) : (
+                          chatMessages.map((msg, mIdx) => (
+                            <div
+                              key={mIdx}
+                              className={cx(
+                                "flex flex-col text-xs leading-relaxed max-w-[88%] rounded-xl p-3",
+                                msg.role === "user"
+                                  ? "ml-auto bg-accent text-white rounded-br-none"
+                                  : "mr-auto bg-paper border border-rule text-ink-800 rounded-bl-none shadow-xs",
+                              )}
+                            >
+                              <span className="font-semibold text-[10px] opacity-75 mb-1">
+                                {msg.role === "user" ? "You" : "SmartMedic Clinical AI"} · {msg.time}
+                              </span>
+                              <p className="whitespace-pre-line">{msg.text}</p>
+                            </div>
+                          ))
+                        )}
+                        {chatLoading ? (
+                          <div className="mr-auto bg-paper border border-rule text-ink-600 rounded-xl p-3 text-xs flex items-center gap-2">
+                            <span className="animate-spin text-accent">⚡</span>
+                            <span>SmartMedic AI is reviewing your report...</span>
+                          </div>
+                        ) : null}
+                      </div>
+
+                      {/* Input Box */}
+                      <form
+                        onSubmit={(e) => {
+                          e.preventDefault();
+                          void handleAskQuestion();
+                        }}
+                        className="flex items-center gap-2"
+                      >
+                        <input
+                          type="text"
+                          value={chatInput}
+                          onChange={(e) => setChatInput(e.target.value)}
+                          placeholder="e.g. What does my fasting glucose mean? What should I ask my doctor?"
+                          className="flex-1 rounded-lg border border-rule bg-paper px-3 py-2 text-xs text-ink-900 placeholder:text-ink-400 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+                        />
+                        <Button type="submit" size="sm" variant="primary" disabled={!chatInput.trim() || chatLoading}>
+                          <Icon name="bolt" size={13} />
+                          Ask AI
+                        </Button>
+                      </form>
+                    </div>
+                  )}
                 </div>
 
                 {/* ---------------------------------------------------------- */}

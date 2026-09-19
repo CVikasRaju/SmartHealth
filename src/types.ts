@@ -618,6 +618,7 @@ export interface MedicalReport {
   doctorNotes: string;
   archived?: boolean;
   resolvedReason?: string;
+  aiAnalysis?: import("@/engine/aiReportExplainer").AiReportAnalysis;
   createdAt: string;
 }
 

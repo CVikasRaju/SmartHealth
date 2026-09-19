@@ -266,7 +266,7 @@ export function AppStoreProvider({
   children: ReactNode;
   initialState?: AppState;
 }) {
-  const { api, mode: sessionMode } = useSession();
+  const { api, mode: sessionMode, signOut } = useSession();
 
   const [state, dispatch] = useReducer(
     appReducer,
@@ -310,10 +310,15 @@ export function AppStoreProvider({
       setLoadError(null);
       setLoadState("ready");
     } catch (error) {
-      setLoadError(describeError(error));
+      const msg = describeError(error);
+      if (/missing|expired|invalid|no_profile|unauthorized|401|403/i.test(msg)) {
+        void signOut();
+        return;
+      }
+      setLoadError(msg);
       setLoadState("error");
     }
-  }, [api]);
+  }, [api, signOut]);
 
   useEffect(() => {
     if (initialState) return;
@@ -870,6 +875,7 @@ export function AppStoreProvider({
         title="The hospital record could not be loaded"
         detail={loadError ?? undefined}
         onRetry={() => void load()}
+        onSignOut={() => void signOut()}
       />
     );
   }

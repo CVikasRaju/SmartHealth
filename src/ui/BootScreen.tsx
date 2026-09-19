@@ -14,10 +14,12 @@ export default function BootScreen({
   title,
   detail,
   onRetry,
+  onSignOut,
 }: {
   title: string;
   detail?: string;
   onRetry?: () => void;
+  onSignOut?: () => void;
 }) {
   return (
     <div className="flex min-h-screen flex-col bg-canvas">
@@ -37,15 +39,25 @@ export default function BootScreen({
           </div>
 
           <div className="px-6 py-6">
-            <p className="sm-eyebrow">{onRetry ? "Interrupted" : "Please wait"}</p>
+            <p className="sm-eyebrow">{onRetry || onSignOut ? "Interrupted" : "Please wait"}</p>
             <h1 className="mt-1.5 font-serif text-lg text-ink-900">{title}</h1>
             {detail ? <p className="mt-2 text-xs leading-relaxed text-ink-500">{detail}</p> : null}
 
-            {onRetry ? (
-              <Button variant="primary" className="mt-4" onClick={onRetry}>
-                <Icon name="refresh" size={13} />
-                Try again
-              </Button>
+            {onRetry || onSignOut ? (
+              <div className="mt-4 flex flex-wrap items-center gap-2">
+                {onRetry ? (
+                  <Button variant="primary" onClick={onRetry}>
+                    <Icon name="refresh" size={13} />
+                    Try again
+                  </Button>
+                ) : null}
+                {onSignOut ? (
+                  <Button variant="secondary" onClick={onSignOut}>
+                    <Icon name="lock" size={13} />
+                    Go to Sign In
+                  </Button>
+                ) : null}
+              </div>
             ) : (
               <p className="mt-4 inline-flex items-center gap-2 text-[11px] text-ink-400">
                 <span className="h-3 w-3 animate-spin border border-ink-300 border-t-accent" />

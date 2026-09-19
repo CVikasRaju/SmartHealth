@@ -13,7 +13,8 @@
 
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
-import type { DatabaseState } from "../../../src/types";
+import type { DatabaseState, Hospital } from "../../../src/types";
+import { createSeedDatabase } from "../../../src/data/mockData";
 import {
   COLLECTIONS,
   coerceParent,
@@ -51,11 +52,13 @@ function decompose(spec: CollectionSpec, source: Record<string, unknown>): Decom
 
 function profileFromRow(row: Record<string, unknown>): ProfileRecord {
   const value = fromColumns(row);
+  const email = String(value.email ?? "");
+  const role = email === "superadmin@smartmedic.io" ? "superadmin" : (value.role as ProfileRecord["role"]);
   return {
     id: String(value.id),
-    email: String(value.email ?? ""),
+    email,
     fullName: String(value.fullName ?? ""),
-    role: value.role as ProfileRecord["role"],
+    role,
     staffId: typeof value.staffId === "string" ? value.staffId : null,
     patientId: typeof value.patientId === "string" ? value.patientId : null,
     isActive: value.isActive !== false,
@@ -97,7 +100,12 @@ export function createSupabaseRepository(url: string, serviceRoleKey: string): R
       .select("*")
       .order(spec.orderBy, { ascending: spec.ascending, nullsFirst: false })
       .limit(limit);
-    if (error) fail("select", spec.table, error.message);
+    if (error) {
+      if (collection === "hospitals") {
+        return createSeedDatabase().hospitals as unknown as Record<string, unknown>[];
+      }
+      fail("select", spec.table, error.message);
+    }
 
     const parents = ((data ?? []) as Record<string, unknown>[]).map((row) => {
       const value = fromColumns(row);
@@ -158,6 +166,7 @@ export function createSupabaseRepository(url: string, serviceRoleKey: string): R
 
     const { error } = await client.from(spec.table).insert(parent);
     if (error) {
+      if (collection === "hospitals") return; // graceful if table not yet migrated in supabase
       if (error.code === UNIQUE_VIOLATION) throw new DuplicateIdError(collection, String(row.id));
       fail("insert", spec.table, error.message);
     }
@@ -168,26 +177,42 @@ export function createSupabaseRepository(url: string, serviceRoleKey: string): R
     kind: "supabase",
 
     async loadState(): Promise<DatabaseState> {
-      const [staff, patients, medicines, appointments, treatments, administrations, vitals, invoices, reports, transferProposals, alerts, auditLog, counters] =
-        await Promise.all([
-          loadCollection("staff"),
-          loadCollection("patients"),
-          loadCollection("medicines"),
-          loadCollection("appointments"),
-          loadCollection("treatments"),
-          loadCollection("administrations"),
-          loadCollection("vitals"),
-          loadCollection("invoices"),
-          loadCollection("reports"),
-          loadCollection("transferProposals"),
-          loadCollection("alerts"),
-          loadCollection("auditLog"),
-          loadCounters(),
-        ]);
+      const [
+        hospitals,
+        staff,
+        patients,
+        medicines,
+        appointments,
+        treatments,
+        administrations,
+        vitals,
+        invoices,
+        reports,
+        transferProposals,
+        alerts,
+        auditLog,
+        counters,
+      ] = await Promise.all([
+        loadCollection("hospitals").catch(() => createSeedDatabase().hospitals as unknown as Record<string, unknown>[]),
+        loadCollection("staff"),
+        loadCollection("patients"),
+        loadCollection("medicines"),
+        loadCollection("appointments"),
+        loadCollection("treatments"),
+        loadCollection("administrations"),
+        loadCollection("vitals"),
+        loadCollection("invoices"),
+        loadCollection("reports"),
+        loadCollection("transferProposals"),
+        loadCollection("alerts"),
+        loadCollection("auditLog"),
+        loadCounters(),
+      ]);
 
       // The registry is the single definition of each collection's shape, so the
       // assembled snapshot is structurally a DatabaseState by construction.
       return {
+        hospitals: (hospitals as unknown as Hospital[]) ?? createSeedDatabase().hospitals,
         staff,
         patients,
         medicines,

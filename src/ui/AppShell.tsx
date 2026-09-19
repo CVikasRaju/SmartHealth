@@ -10,7 +10,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { useApp } from "@/store/AppStore";
 import { useSession } from "@/store/SessionProvider";
 import { ROLE_META, RISK_TOKENS } from "@/ui/theme";
-import { HOME_VIEW, NAV_BY_ROLE, findNavItem } from "@/ui/navigation";
+import { NAV_BY_ROLE, findNavItem } from "@/ui/navigation";
 import RoleSwitcher from "@/ui/RoleSwitcher";
 import AlertRail from "@/ui/AlertRail";
 import Icon from "@/ui/Icon";
@@ -398,24 +398,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
       </div>
 
       <footer className="no-print border-t border-rule bg-paper px-4 py-3 text-center text-[10px] leading-relaxed text-ink-400 lg:px-6">
-        {BRANDING.name} {BRANDING.documentTitle} &middot; v{BRANDING.version} &middot; {BRANDING.provenance} Staff
-        accounts can switch roles from the masthead to follow one encounter end to end.
-        {state.session.role !== "patient" ? (
-          <span className="ml-1">
-            <button
-              type="button"
-              className="text-accent underline decoration-dotted hover:text-accent-deep"
-              onClick={() => {
-                actions.setRole("patient");
-                actions.setActivePatient("patient-2");
-                actions.setView(HOME_VIEW.patient);
-              }}
-            >
-              Open the patient portal as Priya Sharma
-            </button>
-            .
-          </span>
-        ) : null}
+        {BRANDING.name} {BRANDING.documentTitle} &middot; v{BRANDING.version} &middot; {BRANDING.provenance} Multi-Tenant Privacy &amp; Zero-Trust Data Scoping Active.
       </footer>
     </div>
   );

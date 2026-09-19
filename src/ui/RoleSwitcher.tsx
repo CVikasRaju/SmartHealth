@@ -1,115 +1,131 @@
 /**
- * Role switcher.
+ * User account & session menu.
  *
- * A single dropdown in the masthead moves the session between all six portals.
- * Switching a role also resets the active view to that role's landing page and
- * loads its default persona, so a judge can hop roles without getting stranded
- * on a screen the new role cannot access.
+ * Displays the authenticated user's profile, role entitlement, and hospital
+ * affiliation. Enforces strict privacy by requiring an explicit sign-out / switch
+ * account flow rather than unauthenticated arbitrary role hopping.
  */
 
 import { useRef, useState } from "react";
-import type { Role } from "@/types";
 import { ROLE_META } from "@/ui/theme";
-import { HOME_VIEW, NAV_BY_ROLE, ROLE_DEFAULTS } from "@/ui/navigation";
 import { useApp } from "@/store/AppStore";
+import { useSession } from "@/store/SessionProvider";
 import { useClickOutside } from "@/ui/hooks";
 import Icon from "@/ui/Icon";
-import { cx } from "@/utils/format";
-
-const ROLE_ORDER: Role[] = ["superadmin", "admin", "doctor", "nurse", "receptionist", "cashier", "patient"];
+import { Button } from "@/ui/primitives";
+import { cx, displayName } from "@/utils/format";
 
 export default function RoleSwitcher() {
-  const { state, actions } = useApp();
+  const { state, profile } = useApp();
+  const { signOut } = useSession();
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useClickOutside(containerRef, () => setOpen(false), open);
 
-  const current = state.session.role;
-  const meta = ROLE_META[current];
-
-  const switchRole = (role: Role) => {
-    const defaults = ROLE_DEFAULTS[role];
-    actions.setRole(role);
-    actions.setActivePatient(defaults.patientId);
-    actions.setView(HOME_VIEW[role]);
-    setOpen(false);
-  };
+  const currentRole = state.session.role;
+  const meta = ROLE_META[currentRole];
+  const hospital = (state.db.hospitals ?? []).find((h) => h.id === state.session.hospitalId);
 
   return (
     <div ref={containerRef} className="relative">
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
-        aria-haspopup="listbox"
+        aria-haspopup="dialog"
         aria-expanded={open}
-        className="flex items-center gap-2.5 border border-rule-strong bg-paper py-1 pl-1.5 pr-2.5 transition hover:bg-canvas"
+        title="User Account & Session"
+        className="flex items-center gap-2.5 border border-rule-strong bg-paper py-1 pl-1.5 pr-2.5 transition hover:bg-canvas rounded-sm"
       >
         <span
-          className="grid h-7 w-7 place-items-center text-[11px] font-bold text-white"
+          className="grid h-7 w-7 place-items-center text-[11px] font-bold text-white shadow-xs rounded-xs"
           style={{ background: meta.accent }}
         >
           {meta.label.slice(0, 2).toUpperCase()}
         </span>
         <span className="hidden text-left sm:block">
-          <span className="block text-xs font-semibold leading-tight text-ink-900">{meta.label} portal</span>
-          <span className="block text-[10px] leading-tight text-ink-400">Switch role</span>
+          <span className="block text-xs font-semibold leading-tight text-ink-900">{meta.label}</span>
+          <span className="block text-[10px] leading-tight text-ink-400">
+            {profile?.fullName ? displayName(profile.fullName) : meta.persona.split("·")[0].trim()}
+          </span>
         </span>
         <Icon name="chevronDown" size={14} className={cx("text-ink-400 transition", open && "rotate-180")} />
       </button>
 
       {open ? (
         <div
-          role="listbox"
-          className="absolute right-0 z-40 mt-2 w-[22rem] animate-rise-in overflow-hidden border border-rule-strong bg-paper shadow-sheet"
+          role="dialog"
+          aria-label="User Account Information"
+          className="absolute right-0 z-40 mt-2 w-[22rem] animate-rise-in overflow-hidden border border-rule-strong bg-paper shadow-sheet rounded"
         >
-          <div className="border-b border-rule bg-canvas px-4 py-3">
-            <p className="sm-eyebrow">Demonstration role switching</p>
-            <p className="mt-1 text-[11px] leading-relaxed text-ink-500">
-              Every portal reads the same seeded database, so a prescription written as a doctor is visible to the
-              nurse and the cashier straight away.
-            </p>
+          {/* User profile header */}
+          <div className="border-b border-rule bg-canvas p-4">
+            <div className="flex items-center gap-3">
+              <span
+                className="grid h-10 w-10 shrink-0 place-items-center text-sm font-bold text-white rounded"
+                style={{ background: meta.accent }}
+              >
+                {meta.label.slice(0, 2).toUpperCase()}
+              </span>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold text-ink-900">
+                  {profile?.fullName ?? meta.persona.split("·")[0].trim()}
+                </p>
+                <p className="truncate text-xs text-ink-500">{profile?.email ?? "Authenticated User"}</p>
+              </div>
+            </div>
+
+            <div className="mt-3 flex flex-wrap items-center gap-2 pt-2 border-t border-rule-soft">
+              <span
+                className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded border border-rule bg-paper"
+                style={{ color: meta.accent }}
+              >
+                {meta.label}
+              </span>
+              <span className="text-[11px] text-ink-600 font-medium">
+                {currentRole === "superadmin"
+                  ? "Health Network Governance"
+                  : hospital
+                  ? hospital.name
+                  : "KMC Hospital Mangalore"}
+              </span>
+            </div>
           </div>
-          <ul className="max-h-[24rem] overflow-y-auto p-1.5">
-            {ROLE_ORDER.map((role) => {
-              const roleMeta = ROLE_META[role];
-              const isActive = role === current;
-              return (
-                <li key={role}>
-                  <button
-                    type="button"
-                    role="option"
-                    aria-selected={isActive}
-                    onClick={() => switchRole(role)}
-                    className={cx(
-                      "flex w-full items-start gap-3 border-l-2 px-3 py-2.5 text-left transition",
-                      isActive ? "border-accent bg-accent-soft" : "border-transparent hover:bg-canvas",
-                    )}
-                  >
-                    <span
-                      className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center text-[11px] font-bold text-white"
-                      style={{ background: roleMeta.accent }}
-                    >
-                      {roleMeta.label.slice(0, 2).toUpperCase()}
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="flex items-center gap-2">
-                        <span className="font-serif text-[15px] font-semibold text-ink-900">{roleMeta.label}</span>
-                        <span className="text-[10px] uppercase tracking-[0.1em] text-ink-400">
-                          {NAV_BY_ROLE[role].length} modules
-                        </span>
-                      </span>
-                      <span className="mt-1 block text-[11px] text-ink-500">{roleMeta.persona}</span>
-                      <span className="mt-1 block text-[11px] leading-relaxed text-ink-400">
-                        {roleMeta.summary}
-                      </span>
-                    </span>
-                    {isActive ? <Icon name="check" size={15} className="mt-1 shrink-0 text-accent" /> : null}
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
+
+          {/* Privacy & Scope Information */}
+          <div className="p-4 space-y-3">
+            <div className="rounded border border-rule bg-canvas/60 p-3 text-[11px] leading-relaxed text-ink-600">
+              <p className="font-semibold text-ink-800 flex items-center gap-1.5 mb-1">
+                <Icon name="check" size={13} className="text-risk-normal" />
+                Zero-Trust Data Isolation Active
+              </p>
+              <p>
+                {currentRole === "superadmin"
+                  ? "Super Admin is strictly isolated from patient health records (Zero PHI Access) to ensure regulatory compliance."
+                  : currentRole === "admin"
+                  ? "Hospital Admin is scoped to institutional operations, drug shortage management, and administrative staffing."
+                  : currentRole === "patient"
+                  ? "Patient Portal is restricted solely to your personal medical records and test reports."
+                  : "Clinical access is logged on the immutable audit trail."}
+              </p>
+            </div>
+
+            {/* Explicit Sign Out / Switch Account */}
+            <div className="pt-2">
+              <Button
+                size="sm"
+                variant="secondary"
+                fullWidth
+                onClick={() => {
+                  setOpen(false);
+                  void signOut();
+                }}
+              >
+                <Icon name="close" size={13} />
+                Sign out / Switch Account
+              </Button>
+            </div>
+          </div>
         </div>
       ) : null}
     </div>

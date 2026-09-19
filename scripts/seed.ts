@@ -61,6 +61,14 @@ interface SeedIdentity {
 }
 
 function identities(db: DatabaseState): SeedIdentity[] {
+  const superadmin: SeedIdentity = {
+    email: "superadmin@smartmedic.io",
+    fullName: "Dr. Rajeshwar Hegde",
+    role: "admin",
+    staffId: "staff-admin-1",
+    patientId: null,
+  };
+
   const staff: SeedIdentity[] = db.staff.map((member) => ({
     email: member.email,
     fullName: member.fullName,
@@ -80,7 +88,7 @@ function identities(db: DatabaseState): SeedIdentity[] {
       patientId: patient.id,
     }));
 
-  return [...staff, ...patients];
+  return [superadmin, ...staff, ...patients];
 }
 
 function describe(db: DatabaseState, identityList: SeedIdentity[]): void {

@@ -117,13 +117,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         if (cancelled) return;
         setDemoProfiles(profiles);
 
-        const stored = window.localStorage.getItem(DEMO_ACTOR_KEY);
-        if (stored && profiles.some((profile) => profile.id === stored)) {
-          setDemoActor(stored);
-          setStatus("signed_in");
-        } else {
-          setStatus("signed_out");
-        }
+        // Always start on the sign-in page so the user can select their role
+        setStatus("signed_out");
       })
       .catch((cause: unknown) => {
         if (cancelled) return;
