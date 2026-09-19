@@ -71,6 +71,9 @@ export type AppAction =
   | { type: "invoice/pay"; invoiceId: string; transaction: PaymentTransaction; actor: ActorRef }
   | { type: "report/add"; report: MedicalReport; actor: ActorRef }
   | { type: "report/note"; reportId: string; notes: string; actor: ActorRef }
+  | { type: "report/archive"; reportId: string; archived: boolean; reason?: string; actor: ActorRef }
+  | { type: "patient/resolveCondition"; patientId: string; condition: string; action: "resolve" | "reactivate"; actor: ActorRef }
+  | { type: "patient/inquiry"; patientId: string; subject: string; message: string; doctorId?: string; actor: ActorRef }
   | {
       type: "transfer/decide";
       proposal: TransferProposal;
@@ -315,6 +318,70 @@ export function appReducer(state: AppState, action: AppAction): AppState {
         "report.note",
         action.reportId,
         "Physician note recorded against the simplified report.",
+      );
+      return { ...state, db };
+    }
+
+    case "report/archive": {
+      const db = applyAudit(
+        {
+          ...state.db,
+          reports: state.db.reports.map((report: MedicalReport) =>
+            report.id === action.reportId
+              ? { ...report, archived: action.archived, resolvedReason: action.reason }
+              : report,
+          ),
+        },
+        action.actor,
+        action.archived ? "report.archive" : "report.unarchive",
+        action.reportId,
+        action.archived
+          ? `Archived report as recovered/resolved (${action.reason ?? "Condition resolved"}).`
+          : "Restored report to active profile.",
+      );
+      return { ...state, db };
+    }
+
+    case "patient/resolveCondition": {
+      const db = applyAudit(
+        {
+          ...state.db,
+          patients: state.db.patients.map((patient: Patient) => {
+            if (patient.id !== action.patientId) return patient;
+            const chronic = patient.chronicConditions || [];
+            const resolved = patient.resolvedConditions || [];
+            if (action.action === "resolve") {
+              return {
+                ...patient,
+                chronicConditions: chronic.filter((c) => c !== action.condition),
+                resolvedConditions: Array.from(new Set([...resolved, action.condition])),
+              };
+            } else {
+              return {
+                ...patient,
+                chronicConditions: Array.from(new Set([...chronic, action.condition])),
+                resolvedConditions: resolved.filter((c) => c !== action.condition),
+              };
+            }
+          }),
+        },
+        action.actor,
+        action.action === "resolve" ? "patient.condition.resolve" : "patient.condition.reactivate",
+        action.patientId,
+        action.action === "resolve"
+          ? `Marked condition "${action.condition}" as resolved/recovered.`
+          : `Re-activated condition "${action.condition}".`,
+      );
+      return { ...state, db };
+    }
+
+    case "patient/inquiry": {
+      const db = applyAudit(
+        state.db,
+        action.actor,
+        "patient.inquiry",
+        action.patientId,
+        `Submitted query: "${action.subject}" — ${action.message}`,
       );
       return { ...state, db };
     }

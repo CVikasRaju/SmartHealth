@@ -307,6 +307,7 @@ export interface Patient {
   emergencyContact: EmergencyContact;
   currentAdmission: Admission;
   chronicConditions: string[];
+  resolvedConditions?: string[];
   registeredAt: string;
 }
 
@@ -588,6 +589,8 @@ export interface MedicalReport {
   extractedFields: ExtractedField[];
   medicalDisclaimer: string;
   doctorNotes: string;
+  archived?: boolean;
+  resolvedReason?: string;
   createdAt: string;
 }
 

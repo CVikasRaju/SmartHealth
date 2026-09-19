@@ -210,6 +210,9 @@ export interface AppActions {
   }) => void;
   uploadReport: (input: UploadReportInput) => MedicalReport;
   saveReportNote: (reportId: string, notes: string) => void;
+  toggleReportArchive: (reportId: string, archived: boolean, reason?: string) => void;
+  resolvePatientCondition: (patientId: string, condition: string, action: "resolve" | "reactivate") => void;
+  sendPatientInquiry: (patientId: string, subject: string, message: string, doctorId?: string) => void;
   decideTransfer: (proposal: TransferProposal, decision: "approved" | "rejected") => void;
   acknowledgeAlert: (alert: ShortageAlert) => void;
   resetDemo: () => void;
@@ -581,6 +584,15 @@ export function AppStoreProvider({
       },
 
       saveReportNote: (reportId, notes) => send({ type: "report/note", reportId, notes, actor }),
+
+      toggleReportArchive: (reportId, archived, reason) =>
+        send({ type: "report/archive", reportId, archived, reason, actor }),
+
+      resolvePatientCondition: (patientId, condition, action) =>
+        send({ type: "patient/resolveCondition", patientId, condition, action, actor }),
+
+      sendPatientInquiry: (patientId, subject, message, doctorId) =>
+        send({ type: "patient/inquiry", patientId, subject, message, doctorId, actor }),
 
       decideTransfer: (proposal, decision) => send({ type: "transfer/decide", proposal, decision, actor }),
 
