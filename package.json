@@ -15,7 +15,10 @@
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "seed": "tsx scripts/seed.ts",
-    "seed:dry-run": "tsx scripts/seed.ts --dry-run"
+    "seed:dry-run": "tsx scripts/seed.ts --dry-run",
+    "verify": "npm run verify:api && npm run verify:store",
+    "verify:api": "tsx scripts/verify-api.ts",
+    "verify:store": "tsx scripts/verify-store.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",
