@@ -11,7 +11,7 @@
     "dev": "vite",
     "dev:api": "tsx watch server/dev.ts",
     "dev:stack": "node scripts/dev-stack.mjs",
-    "build": "tsc --noEmit && vite build",
+    "build": "tsc --noEmit && vite build && esbuild api/_entry.ts --bundle --platform=node --target=node20 --format=esm --outfile=api/[...path].js --packages=external",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "seed": "tsx scripts/seed.ts",
