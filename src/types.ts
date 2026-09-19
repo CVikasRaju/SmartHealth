@@ -155,6 +155,18 @@ export interface RiskDriver {
   maxPoints: number;
 }
 
+/** Per-ward days of cover, derived from the ward's par level and share of demand. */
+export interface WardCoverage {
+  ward: WardId;
+  quantity: number;
+  parLevel: number;
+  /** Expected daily draw for this ward, apportioned by its par level. */
+  expectedDailyDemand: number;
+  /** Days of cover this ward holds against its own expected draw. */
+  coverDays: number;
+  atRisk: boolean;
+}
+
 export interface RiskAssessment {
   medicineId: string;
   sku: string;
@@ -187,6 +199,13 @@ export interface RiskAssessment {
   recommendation: string;
   /** EWMA curve, oldest first, for the drill-down sparkline. */
   burnSeries: number[];
+  /** Wards whose cover has fallen below the at-risk threshold. */
+  wardsAtRisk: number;
+  /** Ward with the thinnest cover, or null when nothing is held at ward level. */
+  worstWard: WardId | null;
+  /** Units sitting above ward par levels that an inter-ward transfer could release. */
+  strandedUnits: number;
+  coverageByWard: WardCoverage[];
 }
 
 export interface TransferProposal {
