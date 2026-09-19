@@ -29,6 +29,7 @@ import {
   TextInput,
 } from "@/ui/primitives";
 import Icon from "@/ui/Icon";
+import { BRANDING } from "@/config/branding";
 import { cx, formatCurrency, formatDate, formatDateTime, formatTime, titleCase } from "@/utils/format";
 
 /* ------------------------------------------------------------------ */
@@ -600,8 +601,9 @@ function PosCheckout() {
               <div className="rounded-lg border border-rule bg-paper p-4">
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-sm font-semibold text-ink-900">SmartMedic Hospital</p>
+                    <p className="font-serif text-[15px] font-semibold text-ink-900">{BRANDING.name}</p>
                     <p className="text-[11px] text-ink-500">Billing &amp; Revenue Cycle</p>
+                    <p className="mt-1 text-[10px] text-ink-400">{BRANDING.organisation}</p>
                   </div>
                   <span className="sm-chip border-risk-normal/45 bg-risk-normal/[0.08] text-risk-normal">Paid</span>
                 </div>

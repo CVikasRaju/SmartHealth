@@ -27,7 +27,7 @@ export function Panel({
   className?: string;
   padded?: boolean;
 }) {
-  return <section className={cx("sm-panel", padded && "p-4", className)}>{children}</section>;
+  return <section className={cx("sm-panel", padded && "p-3.5", className)}>{children}</section>;
 }
 
 export function PanelHeader({
@@ -44,7 +44,7 @@ export function PanelHeader({
   className?: string;
 }) {
   return (
-    <header className={cx("mb-3.5 flex items-start justify-between gap-4 border-b border-rule-soft pb-3", className)}>
+    <header className={cx("mb-3 flex items-start justify-between gap-4 border-b border-rule-soft pb-2.5", className)}>
       <div className="flex min-w-0 items-start gap-2.5">
         {icon ? <span className="mt-0.5 text-ink-400">{icon}</span> : null}
         <div className="min-w-0">
@@ -78,7 +78,7 @@ export function EmptyState({
   className?: string;
 }) {
   return (
-    <div className={cx("border border-dashed border-rule-strong bg-paper-tint px-5 py-8 text-center", className)}>
+    <div className={cx("border border-dashed border-rule-strong bg-paper-tint px-5 py-6 text-center", className)}>
       <p className="text-sm font-semibold text-ink-700">{title}</p>
       {description ? <p className="mx-auto mt-1 max-w-md text-xs leading-relaxed text-ink-500">{description}</p> : null}
       {action ? <div className="mt-4 flex justify-center">{action}</div> : null}
@@ -165,7 +165,7 @@ export function SignalMeter({
 }) {
   const ratio = maxPoints > 0 ? Math.min(1, points / maxPoints) : 0;
   return (
-    <div className="border border-rule-soft bg-paper-tint p-3">
+    <div className="border border-rule-soft bg-paper-tint p-2.5">
       <div className="flex items-baseline justify-between gap-3">
         <span className="text-xs font-semibold text-ink-900">{label}</span>
         <span className="text-xs text-ink-500">
@@ -206,18 +206,60 @@ export function StatTile({
   };
 
   return (
-    <div className="border border-rule bg-paper p-3.5">
+    <div className="border border-rule bg-paper p-3">
       <p className="sm-eyebrow">{label}</p>
-      <p className={cx("mt-1.5 font-serif text-3xl leading-none", tones[tone])}>{value}</p>
-      {hint ? <p className="mt-1.5 text-[11px] leading-relaxed text-ink-500">{hint}</p> : null}
-      {footer ? <div className="mt-3 border-t border-rule-soft pt-2.5">{footer}</div> : null}
+      <p className={cx("mt-1 font-serif text-3xl leading-none", tones[tone])}>{value}</p>
+      {hint ? <p className="mt-1 text-[11px] leading-relaxed text-ink-500">{hint}</p> : null}
+      {footer ? <div className="mt-2.5 border-t border-rule-soft pt-2">{footer}</div> : null}
+    </div>
+  );
+}
+
+/**
+ * Ruled summary strip.
+ *
+ * A report states its headline figures in one banded line rather than four
+ * floating cards, so this renders a single sheet divided by vertical rules.
+ */
+/** Static column map: Tailwind cannot see a class built from a template literal. */
+const STRIP_COLUMNS: Record<number, string> = {
+  1: "sm:grid-cols-1",
+  2: "sm:grid-cols-2",
+  3: "sm:grid-cols-3",
+  4: "sm:grid-cols-4",
+  5: "sm:grid-cols-5",
+  6: "sm:grid-cols-6",
+};
+
+export function MetricStrip({
+  items,
+  className,
+}: {
+  items: { label: string; value: ReactNode; hint?: ReactNode; tone?: string }[];
+  className?: string;
+}) {
+  return (
+    <div
+      className={cx(
+        "grid divide-y divide-rule-soft border border-rule bg-paper sm:divide-y-0 sm:divide-x",
+        STRIP_COLUMNS[items.length] ?? "sm:grid-cols-4",
+        className,
+      )}
+    >
+      {items.map((item) => (
+        <div key={item.label} className="p-3">
+          <p className="sm-eyebrow">{item.label}</p>
+          <p className={cx("mt-1 font-serif text-3xl leading-none", item.tone ?? "text-ink-900")}>{item.value}</p>
+          {item.hint ? <p className="mt-1 text-[11px] leading-relaxed text-ink-500">{item.hint}</p> : null}
+        </div>
+      ))}
     </div>
   );
 }
 
 export function KeyValue({ items }: { items: { label: string; value: ReactNode }[] }) {
   return (
-    <dl className="grid gap-x-6 gap-y-2.5 sm:grid-cols-2">
+    <dl className="grid gap-x-6 gap-y-2 sm:grid-cols-2">
       {items.map((item) => (
         <div key={item.label} className="min-w-0">
           <dt className="sm-eyebrow">{item.label}</dt>
@@ -273,7 +315,7 @@ export function Button({
       onClick={onClick}
       className={cx(
         "inline-flex items-center justify-center gap-1.5 transition disabled:cursor-not-allowed disabled:opacity-40",
-        size === "sm" ? "px-2.5 py-1 text-xs" : "px-3 py-1.5 text-sm",
+        size === "sm" ? "px-2 py-0.5 text-xs" : "px-2.5 py-1 text-sm",
         BUTTON_VARIANTS[variant],
         fullWidth && "w-full",
         className,

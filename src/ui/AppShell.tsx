@@ -16,6 +16,7 @@ import Icon from "@/ui/Icon";
 import { Button, Select } from "@/ui/primitives";
 import { cx, displayName, initials } from "@/utils/format";
 import { formatDays } from "@/engine/shortageEngine";
+import { BRANDING } from "@/config/branding";
 
 /** Live clock, refreshed on a slow interval to keep the demo feeling alive. */
 function useClock(): string {
@@ -132,14 +133,16 @@ export default function AppShell({ children }: { children: ReactNode }) {
       <header className="no-print sticky top-0 z-30 bg-paper sm-masthead-rule">
         <div className="mx-auto flex max-w-[110rem] flex-wrap items-center gap-4 px-4 py-2.5 lg:px-6">
           <div className="flex items-center gap-3">
-            <span className="grid h-10 w-10 shrink-0 place-items-center border border-accent bg-accent text-white">
+            <span
+              className="grid h-10 w-10 shrink-0 place-items-center border bg-accent text-white"
+              style={{ borderColor: BRANDING.accent }}
+              title={BRANDING.organisation}
+            >
               <Icon name="vitals" size={19} />
             </span>
             <div className="leading-tight">
-              <p className="font-serif text-lg font-semibold tracking-tight text-ink-900">SmartMedic</p>
-              <p className="text-[10px] uppercase tracking-[0.14em] text-ink-400">
-                Hospital operations &middot; shortage intelligence &middot; report simplifier
-              </p>
+              <p className="font-serif text-xl font-semibold tracking-tight text-ink-900">{BRANDING.name}</p>
+              <p className="text-[10px] uppercase tracking-[0.14em] text-ink-400">{BRANDING.tagline}</p>
             </div>
           </div>
 
@@ -178,7 +181,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
       {/* ---------------------------------------------------------- */}
       {/* Body                                                        */}
       {/* ---------------------------------------------------------- */}
-      <div className="mx-auto flex w-full max-w-[110rem] flex-1 flex-col gap-6 px-4 py-5 lg:flex-row lg:px-6">
+      <div className="mx-auto flex w-full max-w-[110rem] flex-1 flex-col gap-5 px-4 py-4 lg:flex-row lg:px-6">
         {/* Document index: sidebar on desktop, scrolling strip on mobile. */}
         <nav className="no-print -mx-4 shrink-0 px-4 lg:mx-0 lg:w-64 lg:px-0">
           <p className="mb-2 hidden text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-400 lg:block">
@@ -282,7 +285,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
             </div>
 
             <p className="px-1 text-[10px] leading-relaxed text-ink-400">
-              Prototype for demonstration. Not connected to any live clinical system.
+              {BRANDING.organisation}
             </p>
           </div>
         </nav>
@@ -296,13 +299,13 @@ export default function AppShell({ children }: { children: ReactNode }) {
             <h1 className="mt-1 text-[26px] leading-tight">{active.label}</h1>
             <p className="mt-1 max-w-3xl text-xs leading-relaxed text-ink-500">{active.description}</p>
           </div>
-          <div className="animate-rise-in space-y-5 pb-12">{children}</div>
+          <div className="animate-rise-in space-y-4 pb-12">{children}</div>
         </main>
       </div>
 
       <footer className="no-print border-t border-rule bg-paper px-4 py-3 text-center text-[10px] leading-relaxed text-ink-400 lg:px-6">
-        SmartMedic prototype &middot; seeded in-memory dataset &middot; no live patient data &middot; navigate between
-        roles from the masthead to follow one encounter end to end.
+        {BRANDING.name} {BRANDING.documentTitle} &middot; v{BRANDING.version} &middot; {BRANDING.provenance} Navigate
+        between roles from the masthead to follow one encounter end to end.
         {state.session.role !== "patient" ? (
           <span className="ml-1">
             <button

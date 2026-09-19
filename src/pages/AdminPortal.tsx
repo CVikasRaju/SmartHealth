@@ -25,6 +25,7 @@ import {
   EmptyState,
   Field,
   KeyValue,
+  MetricStrip,
   Panel,
   PanelHeader,
   Select,
@@ -47,6 +48,11 @@ const TIER_FILTERS: { id: RiskTier | "all"; label: string }[] = [
   { id: "moderate", label: "Moderate" },
   { id: "normal", label: "Normal" },
 ];
+
+/** Long-form date for the cover sheet header line. */
+function formularyDate(date: Date): string {
+  return date.toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" });
+}
 
 function ControlRoom() {
   const { derived, actions } = useApp();
@@ -72,64 +78,117 @@ function ControlRoom() {
   const potentialDrop = derived.proposals.reduce((sum, item) => sum + item.estimatedSpsDrop, 0);
 
   return (
-    <div className="space-y-6">
-      {/* Headline board. */}
-      <div className="grid gap-4 lg:grid-cols-[auto_1fr]">
-        <Panel className="flex flex-col items-center justify-center gap-3 lg:w-64">
-          <GaugeArc
-            value={portfolio.peakScore}
-            label="Peak SPS"
-            color={RISK_TOKENS[portfolio.peakScore >= 85 ? "critical" : portfolio.peakScore >= 60 ? "high" : "moderate"].hex}
-            thresholds={[
-              { at: 30, label: "moderate" },
-              { at: 60, label: "high" },
-              { at: 85, label: "critical" },
-            ]}
-            size={190}
-          />
-          <p className="text-center text-[11px] leading-relaxed text-ink-500">
-            Mean score across the {portfolio.total}-molecule formulary is{" "}
-            <span className="font-semibold text-ink-900">{portfolio.meanScore}</span>.
+    <div className="space-y-4">
+      {/* Cover sheet: the state of the formulary, stated once and then ranked. */}
+      <Panel padded={false}>
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-rule bg-canvas px-3.5 py-1.5">
+          <p className="sm-eyebrow">Formulary exposure &middot; {formularyDate(derived.referenceDate)}</p>
+          <p className="text-[10px] text-ink-400">
+            {portfolio.total} molecules scored &middot; {derived.proposals.length} transfer
+            {derived.proposals.length === 1 ? "" : "s"} pending &middot; {derived.alerts.length} live alert
+            {derived.alerts.length === 1 ? "" : "s"}
           </p>
-        </Panel>
-
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <StatTile
-            label="Critical molecules"
-            value={portfolio.critical}
-            tone={portfolio.critical > 0 ? "danger" : "success"}
-            hint="Score at or above 85"
-            footer={
-              <div className="flex flex-wrap gap-1">
-                {derived.assessments
-                  .filter((item) => item.tier === "critical")
-                  .map((item) => (
-                    <span key={item.medicineId} className="text-[10px] text-risk-critical">
-                      {item.brandName}
-                    </span>
-                  ))}
-              </div>
-            }
-          />
-          <StatTile
-            label="High risk"
-            value={portfolio.high}
-            tone={portfolio.high > 0 ? "warning" : "default"}
-            hint="Score 60 to 84"
-          />
-          <StatTile
-            label="Wards under cover"
-            value={portfolio.wardsAtRisk}
-            tone={portfolio.wardsAtRisk > 0 ? "warning" : "success"}
-            hint="Wards below 3 days of their own par demand"
-          />
-          <StatTile
-            label="Stock value at risk"
-            value={formatCurrency(portfolio.valueAtRisk, { compact: true })}
-            hint="Effective stock in the critical and high bands"
-          />
         </div>
-      </div>
+
+        <div className="grid lg:grid-cols-[15rem_1fr]">
+          <div className="flex flex-col items-center justify-center gap-2 border-b border-rule-soft p-3.5 lg:border-b-0 lg:border-r">
+            <GaugeArc
+              value={portfolio.peakScore}
+              label="Peak SPS"
+              color={RISK_TOKENS[portfolio.peakScore >= 85 ? "critical" : portfolio.peakScore >= 60 ? "high" : "moderate"].hex}
+              thresholds={[
+                { at: 30, label: "moderate" },
+                { at: 60, label: "high" },
+                { at: 85, label: "critical" },
+              ]}
+              size={170}
+            />
+            <p className="text-center text-[11px] leading-relaxed text-ink-500">
+              Mean score across the {portfolio.total}-molecule formulary is{" "}
+              <span className="font-semibold text-ink-900">{portfolio.meanScore}</span>.
+            </p>
+          </div>
+
+          <div className="space-y-3 p-3.5">
+            <MetricStrip
+              items={[
+                {
+                  label: "Critical",
+                  value: portfolio.critical,
+                  tone: portfolio.critical > 0 ? "text-risk-critical" : "text-ink-900",
+                  hint: "Score at or above 85",
+                },
+                {
+                  label: "High risk",
+                  value: portfolio.high,
+                  tone: portfolio.high > 0 ? "text-risk-high" : "text-ink-900",
+                  hint: "Score 60 to 84",
+                },
+                {
+                  label: "Wards under cover",
+                  value: portfolio.wardsAtRisk,
+                  tone: portfolio.wardsAtRisk > 0 ? "text-risk-moderate" : "text-ink-900",
+                  hint: "Below 3 days of own par demand",
+                },
+                {
+                  label: "Stock value at risk",
+                  value: formatCurrency(portfolio.valueAtRisk, { compact: true }),
+                  hint: "Critical and high bands",
+                },
+              ]}
+            />
+
+            {/* Ranked register: the same figures as a table, ordered by exposure. */}
+            <table className="w-full">
+              <caption className="sm-eyebrow px-2 py-1 text-left">Ranked exposure register</caption>
+              <thead>
+                <tr>
+                  {["#", "Molecule", "SPS", "Cover", "Lead time", "Dominant driver"].map((heading) => (
+                    <th
+                      key={heading}
+                      className="border-b border-rule bg-canvas px-2 py-1 text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-ink-500"
+                    >
+                      {heading}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {derived.assessments.slice(0, 5).map((item, index) => {
+                  const lead =
+                    item.drivers.length > 0
+                      ? item.drivers.reduce((worst, driver) => (driver.points > worst.points ? driver : worst))
+                      : null;
+                  return (
+                    <tr key={item.medicineId}>
+                      <td className="border-b border-rule-soft px-2 py-1.5 text-xs text-ink-400">{index + 1}</td>
+                      <td className="border-b border-rule-soft px-2 py-1.5">
+                        <span className="text-xs font-medium text-ink-900">{item.brandName}</span>
+                        <span className="ml-1.5 text-[10px] text-ink-400">{item.genericName}</span>
+                      </td>
+                      <td className="border-b border-rule-soft px-2 py-1.5 text-xs font-semibold text-ink-900">
+                        {item.sps.toFixed(1)}
+                      </td>
+                      <td className="border-b border-rule-soft px-2 py-1.5 text-xs text-ink-700">
+                        {formatDays(item.dir)}d
+                      </td>
+                      <td className="border-b border-rule-soft px-2 py-1.5 text-xs text-ink-500">
+                        {item.dynamicLeadTimeDays.toFixed(1)}d
+                      </td>
+                      <td className="border-b border-rule-soft px-2 py-1.5">
+                        <span className="inline-flex items-center gap-1.5 text-xs text-ink-700">
+                          <span className="h-2 w-2 shrink-0" style={{ background: RISK_TOKENS[item.tier].hex }} />
+                          {lead ? `${lead.label} · ${lead.points.toFixed(1)} pts` : "—"}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </Panel>
 
       {/* Redistribution proposals. */}
       <Panel>

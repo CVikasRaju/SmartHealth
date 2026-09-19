@@ -44,6 +44,16 @@ export default {
           normal: "#1c6b3c",
         },
       },
+      /* Compressed type ramp: clinical staff scan dense records, not hero copy. */
+      fontSize: {
+        xs: ["11px", { lineHeight: "15px" }],
+        sm: ["12px", { lineHeight: "17px" }],
+        base: ["13px", { lineHeight: "19px" }],
+        lg: ["15px", { lineHeight: "21px" }],
+        xl: ["17px", { lineHeight: "23px" }],
+        "2xl": ["21px", { lineHeight: "26px" }],
+        "3xl": ["26px", { lineHeight: "30px" }],
+      },
       fontFamily: {
         sans: [
           "-apple-system",

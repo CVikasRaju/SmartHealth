@@ -15,7 +15,7 @@
 
   body {
     @apply bg-canvas text-ink-700 antialiased;
-    font-size: 14px;
+    font-size: 13px;
   }
 
   /* Document headings are set in a book serif, the way a printed report is. */
@@ -62,7 +62,7 @@
   }
 
   .sm-input {
-    @apply w-full border border-rule bg-paper px-2.5 py-1.5 text-sm text-ink-900
+    @apply w-full border border-rule bg-paper px-2 py-1 text-sm text-ink-900
       placeholder:text-ink-300 transition focus:border-accent focus:outline-none
       focus:ring-1 focus:ring-accent/30 disabled:bg-canvas disabled:text-ink-500;
   }
@@ -78,12 +78,12 @@
 
   /* Table typography used across every clinical and financial record. */
   .sm-th {
-    @apply border-b border-rule bg-canvas px-3 py-2 text-left text-[10px] font-semibold
+    @apply border-b border-rule bg-canvas px-2.5 py-1.5 text-left text-[10px] font-semibold
       uppercase tracking-[0.12em] text-ink-500;
   }
 
   .sm-td {
-    @apply border-b border-rule-soft px-3 py-2 align-middle text-sm text-ink-700;
+    @apply border-b border-rule-soft px-2.5 py-1.5 align-middle text-sm text-ink-700;
   }
 
   /* Double rule under the masthead, the way a letterhead is ruled. */
