@@ -18,6 +18,10 @@ pnpm-debug.log*
 
 # environment
 .env
+
+# local scratch + tesseract language data pulled by the OCR verification script
+.tmp/
+*.traineddata
 .env.*
 !.env.example
 
