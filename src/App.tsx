@@ -1,16 +1,44 @@
 /**
- * Placeholder shell. The full role-aware application shell lands in a
- * follow-up commit once the domain types and the in-memory store exist.
+ * SmartMedic — application root.
+ *
+ * Mounts the store provider and routes the session to the correct role portal.
+ * The portal components read `state.activeView` internally, so adding a module
+ * to a role is a one-line change in `src/ui/navigation.ts` rather than another
+ * branch here.
  */
+
+import type { ComponentType } from "react";
+import type { Role } from "@/types";
+import { AppStoreProvider, useApp } from "@/store/AppStore";
+import AppShell from "@/ui/AppShell";
+import AdminPortal from "@/pages/AdminPortal";
+import DoctorPortal from "@/pages/DoctorPortal";
+import NursePortal from "@/pages/NursePortal";
+import ReceptionPortal from "@/pages/ReceptionPortal";
+import CashierPortal from "@/pages/CashierPortal";
+import PatientPortal from "@/pages/PatientPortal";
+
+const PORTALS: Record<Role, ComponentType> = {
+  admin: AdminPortal,
+  doctor: DoctorPortal,
+  nurse: NursePortal,
+  receptionist: ReceptionPortal,
+  cashier: CashierPortal,
+  patient: PatientPortal,
+};
+
+function PortalRouter() {
+  const { state } = useApp();
+  const Portal = PORTALS[state.session.role];
+  return <Portal />;
+}
+
 export default function App() {
   return (
-    <main className="grid min-h-screen place-items-center p-8">
-      <div className="sm-panel max-w-md p-8 text-center">
-        <h1 className="text-2xl font-semibold tracking-tight text-white">SmartMedic</h1>
-        <p className="mt-2 text-sm text-slate-400">
-          Booting the clinical workspace&hellip;
-        </p>
-      </div>
-    </main>
+    <AppStoreProvider>
+      <AppShell>
+        <PortalRouter />
+      </AppShell>
+    </AppStoreProvider>
   );
 }

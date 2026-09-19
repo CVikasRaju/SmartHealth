@@ -263,8 +263,24 @@ function persistSnapshot(state: AppState): void {
 /* Provider                                                            */
 /* ------------------------------------------------------------------ */
 
-export function AppStoreProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(appReducer, undefined, () => loadSnapshot() ?? createInitialAppState());
+/**
+ * Store provider.
+ *
+ * `initialState` bypasses both the persisted snapshot and the seed, which is
+ * how the render smoke test exercises every portal without a browser.
+ */
+export function AppStoreProvider({
+  children,
+  initialState,
+}: {
+  children: ReactNode;
+  initialState?: AppState;
+}) {
+  const [state, dispatch] = useReducer(
+    appReducer,
+    undefined,
+    () => initialState ?? loadSnapshot() ?? createInitialAppState(),
+  );
 
   useEffect(() => {
     persistSnapshot(state);
