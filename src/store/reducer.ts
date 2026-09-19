@@ -14,12 +14,14 @@ import type {
   AppState,
   AppointmentStatus,
   AuditEntry,
+  CollectionKey,
   DatabaseState,
   Invoice,
   MedicalReport,
   Patient,
   PaymentTransaction,
   Role,
+  SessionState,
   ShortageAlert,
   TransferProposal,
   Treatment,
@@ -81,7 +83,18 @@ export type AppAction =
       actor: ActorRef;
     }
   | { type: "alert/acknowledge"; alert: ShortageAlert; actor: ActorRef }
-  | { type: "demo/reset"; db: DatabaseState };
+  | { type: "demo/reset"; db: DatabaseState }
+  /** Wholesale replacement after a server load: signs a role in, or resyncs. */
+  | { type: "state/replaceAll"; db: DatabaseState; session: SessionState; activeView: string }
+  /**
+   * Merge rows the API has committed. Rows already held locally are replaced in
+   * place, which preserves the optimistic ordering the portals rely on.
+   */
+  | {
+      type: "state/merge";
+      collections: Partial<Record<CollectionKey, unknown[]>>;
+      counters?: Record<string, number>;
+    };
 
 /** Append an audit entry and advance the audit counter. */
 function applyAudit(
@@ -448,6 +461,39 @@ export function appReducer(state: AppState, action: AppAction): AppState {
         db: action.db,
         session: { role: state.session.role, staffId: state.session.staffId, patientId: state.session.patientId },
       };
+
+    case "state/replaceAll":
+      return { db: action.db, session: action.session, activeView: action.activeView };
+
+    case "state/merge": {
+      const db: DatabaseState = { ...state.db };
+      const mutable = db as unknown as Record<string, unknown>;
+
+      for (const [key, rows] of Object.entries(action.collections)) {
+        if (!Array.isArray(rows) || rows.length === 0) continue;
+
+        const collection = key as CollectionKey;
+        const existing = db[collection] as unknown as { id: string }[];
+        const incoming = rows as { id: string }[];
+        const byId = new Map(incoming.map((row) => [String(row.id), row]));
+        const held = new Set(existing.map((row) => String(row.id)));
+
+        // Replace what we already hold, then append anything the server knows
+        // about that this client did not create optimistically.
+        const merged = existing.map((row) => byId.get(String(row.id)) ?? row);
+        for (const row of incoming) {
+          if (!held.has(String(row.id))) merged.push(row);
+        }
+
+        mutable[collection] = merged;
+      }
+
+      if (action.counters) {
+        db.counters = { ...db.counters, ...action.counters };
+      }
+
+      return { ...state, db };
+    }
 
     default:
       return state;

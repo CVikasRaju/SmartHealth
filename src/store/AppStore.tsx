@@ -1,13 +1,17 @@
 /**
- * In-memory application store.
+ * Application store.
  *
- * This provider is the prototype's entire backend: it owns the seeded database,
- * re-derives the shortage forecast whenever inventory or consumption changes,
- * and persists the session to localStorage so a demo survives a refresh.
+ * The hospital record is loaded from the API on sign-in and every mutation is
+ * written straight back to it. The client still applies its changes
+ * optimistically through the pure reducer — so the UI never waits on the network
+ * — and then reconciles with the rows the server actually committed. That
+ * reconciliation is what makes the stores authoritative rather than decorative:
+ * when a doctor prescribes, the stock figure that ends up on screen is the one
+ * Postgres holds, not the one the browser guessed.
  *
- * The persisted snapshot is keyed to the calendar day. Reopening the prototype
- * on a later date re-seeds instead of restoring, which keeps the appointment
- * queue and the "today" figures meaningful without any server clock to trust.
+ * Audit entries are the exception: the server writes the ledger itself and does
+ * not echo it back, because the acting identity has to come from the verified
+ * session rather than from the client.
  */
 
 import {
@@ -17,6 +21,8 @@ import {
   useEffect,
   useMemo,
   useReducer,
+  useRef,
+  useState,
   type ReactNode,
 } from "react";
 import type {
@@ -51,6 +57,10 @@ import type {
 } from "@/types";
 import { createInitialAppState, createSeedDatabase } from "@/data/mockData";
 import { appReducer, type ActorRef, type AppAction } from "@/store/reducer";
+import { useSession } from "@/store/SessionProvider";
+import { ApiError, describeError, type AppliedPatch, type ProfileView } from "@/lib/apiClient";
+import { HOME_VIEW, viewBelongsToRole } from "@/ui/navigation";
+import BootScreen from "@/ui/BootScreen";
 import {
   assessInventory,
   buildAlertPayload,
@@ -68,15 +78,6 @@ import {
   type RevenueSummary,
 } from "@/engine/billingEngine";
 import { isSameDay } from "@/utils/format";
-
-const STORAGE_KEY = "smartmedic.session.v1";
-const STORAGE_VERSION = 1;
-
-/** Calendar-day key used to decide whether a stored snapshot is stale. */
-function todayKey(): string {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-}
 
 function sequenceId(prefix: string, sequence: number, width = 4): string {
   return `${prefix}-${String(sequence).padStart(width, "0")}`;
@@ -117,6 +118,15 @@ export interface Derived {
   todaysQueue: () => Appointment[];
   admissionsFor: (ward: WardId) => Patient[];
   emarFor: (ward: WardId) => MedicationAdministration[];
+}
+
+/** Progress of the client synchronisation with the API. */
+export interface SyncState {
+  /** Mutations in flight. */
+  pending: number;
+  /** Last failure, already formatted for display. */
+  error: string | null;
+  lastSyncedAt: string | null;
 }
 
 /* ------------------------------------------------------------------ */
@@ -216,61 +226,34 @@ export interface AppActions {
   decideTransfer: (proposal: TransferProposal, decision: "approved" | "rejected") => void;
   acknowledgeAlert: (alert: ShortageAlert) => void;
   resetDemo: () => void;
+  /** Reload the record from the API, discarding local optimism. */
+  resync: () => void;
 }
 
 interface AppStoreValue {
   state: AppState;
   derived: Derived;
   actions: AppActions;
+  sync: SyncState;
+  /** The signed-in account. */
+  profile: ProfileView | null;
+  /** Whether this session is backed by Postgres or the seeded dataset. */
+  mode: "supabase" | "demo";
 }
 
 const AppStoreContext = createContext<AppStoreValue | null>(null);
 
 /* ------------------------------------------------------------------ */
-/* Persistence                                                         */
-/* ------------------------------------------------------------------ */
-
-interface PersistedSnapshot {
-  version: number;
-  seededOn: string;
-  state: AppState;
-}
-
-function loadSnapshot(): AppState | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as PersistedSnapshot;
-    if (parsed.version !== STORAGE_VERSION) return null;
-    if (parsed.seededOn !== todayKey()) return null;
-    if (!parsed.state?.db?.medicines?.length) return null;
-    return parsed.state;
-  } catch {
-    // A corrupt or unreadable snapshot must never block the demo from booting.
-    return null;
-  }
-}
-
-function persistSnapshot(state: AppState): void {
-  if (typeof window === "undefined") return;
-  try {
-    const payload: PersistedSnapshot = { version: STORAGE_VERSION, seededOn: todayKey(), state };
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-  } catch {
-    // Storage pressure or private-mode restrictions are non-fatal here.
-  }
-}
-
-/* ------------------------------------------------------------------ */
 /* Provider                                                            */
 /* ------------------------------------------------------------------ */
+
+type LoadState = "loading" | "ready" | "error";
 
 /**
  * Store provider.
  *
- * `initialState` bypasses both the persisted snapshot and the seed, which is
- * how the render smoke test exercises every portal without a browser.
+ * `initialState` bypasses the API entirely, which is how the render smoke test
+ * exercises every portal without a server.
  */
 export function AppStoreProvider({
   children,
@@ -279,15 +262,102 @@ export function AppStoreProvider({
   children: ReactNode;
   initialState?: AppState;
 }) {
+  const { api, mode: sessionMode } = useSession();
+
   const [state, dispatch] = useReducer(
     appReducer,
     undefined,
-    () => initialState ?? loadSnapshot() ?? createInitialAppState(),
+    () => initialState ?? createInitialAppState(),
   );
 
+  const [loadState, setLoadState] = useState<LoadState>(initialState ? "ready" : "loading");
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [profile, setProfile] = useState<ProfileView | null>(null);
+  const [mode, setMode] = useState<"supabase" | "demo">(sessionMode);
+  const [sync, setSync] = useState<SyncState>({ pending: 0, error: null, lastSyncedAt: null });
+
+  // Lets a resync keep the operator on the page they were reading.
+  const activeViewRef = useRef(state.activeView);
+  activeViewRef.current = state.activeView;
+
+  /* -------- Load and reconcile -------- */
+
+  const load = useCallback(async () => {
+    setLoadState("loading");
+    try {
+      const payload = await api.bootstrap();
+      const role = payload.profile.role;
+
+      dispatch({
+        type: "state/replaceAll",
+        db: payload.db,
+        session: {
+          role,
+          staffId: payload.profile.staffId ?? payload.db.staff[0]?.id ?? "",
+          patientId: payload.profile.patientId ?? payload.db.patients[0]?.id ?? "",
+        },
+        activeView: viewBelongsToRole(role, activeViewRef.current)
+          ? activeViewRef.current
+          : HOME_VIEW[role],
+      });
+
+      setProfile(payload.profile);
+      setMode(payload.mode);
+      setLoadError(null);
+      setLoadState("ready");
+    } catch (error) {
+      setLoadError(describeError(error));
+      setLoadState("error");
+    }
+  }, [api]);
+
   useEffect(() => {
-    persistSnapshot(state);
-  }, [state]);
+    if (initialState) return;
+    void load();
+  }, [initialState, load]);
+
+  /* -------- Mutation tracking -------- */
+
+  const persist = useCallback(
+    async (label: string, work: Promise<AppliedPatch>) => {
+      setSync((current) => ({ ...current, pending: current.pending + 1 }));
+      try {
+        const applied = await work;
+        dispatch({
+          type: "state/merge",
+          collections: applied.collections,
+          counters: applied.counters,
+        });
+        setSync((current) => ({
+          ...current,
+          pending: Math.max(0, current.pending - 1),
+          error: null,
+          lastSyncedAt: new Date().toISOString(),
+        }));
+      } catch (error) {
+        setSync((current) => ({
+          ...current,
+          pending: Math.max(0, current.pending - 1),
+          error: `${label}. ${describeError(error)}`,
+        }));
+
+        // A rejected or conflicting write means this client's snapshot no longer
+        // matches the server's, so the honest response is to reload it.
+        const stale =
+          error instanceof ApiError &&
+          (error.code === "duplicate_id" || error.status === 401 || error.status === 403);
+        if (stale) void load();
+      }
+    },
+    [load],
+  );
+
+  const track = useCallback(
+    (label: string, work: Promise<AppliedPatch>) => {
+      void persist(label, work);
+    },
+    [persist],
+  );
 
   const { db, session } = state;
 
@@ -408,7 +478,8 @@ export function AppStoreProvider({
 
   /* -------- Actor resolution -------- */
 
-  const currentStaff = session.role === "patient" ? null : (staffById.get(session.staffId) ?? null);
+  const currentStaff =
+    session.role === "patient" ? null : (staffById.get(session.staffId) ?? null);
   const currentPatient = patientsById.get(session.patientId) ?? null;
 
   const actor: ActorRef = useMemo(() => {
@@ -457,6 +528,7 @@ export function AppStoreProvider({
           registeredAt: new Date().toISOString(),
         };
         send({ type: "patient/register", patient, actor });
+        track("Could not save the patient registration", api.post("/patients", { patient }));
         return patient;
       },
 
@@ -476,13 +548,32 @@ export function AppStoreProvider({
           createdAt: new Date().toISOString(),
         };
         send({ type: "appointment/create", appointment, actor });
+        track("Could not save the appointment", api.post("/appointments", { appointment }));
         return appointment;
       },
 
-      setAppointmentStatus: (id, status, queuePosition) =>
-        send({ type: "appointment/status", id, status, queuePosition, actor }),
+      setAppointmentStatus: (id, status, queuePosition) => {
+        send({ type: "appointment/status", id, status, queuePosition, actor });
+        track(
+          "Could not update the appointment",
+          api.patch(`/appointments/${id}`, {
+            status,
+            queuePosition: queuePosition === undefined ? null : queuePosition,
+          }),
+        );
+      },
 
-      triageAppointment: (input) => send({ type: "appointment/triage", ...input, actor }),
+      triageAppointment: (input) => {
+        send({ type: "appointment/triage", ...input, actor });
+        track(
+          "Could not record the triage assessment",
+          api.patch(`/appointments/${input.id}`, {
+            acuity: input.acuity,
+            triageNotes: input.notes,
+            doctorId: input.doctorId,
+          }),
+        );
+      },
 
       prescribe: (input) => {
         const sequence = (db.counters.treatment ?? 0) + 1;
@@ -513,10 +604,21 @@ export function AppStoreProvider({
           createdAt: new Date().toISOString(),
         };
         send({ type: "treatment/create", treatment, actor });
+        track("Could not save the prescription", api.post("/treatments", { treatment }));
         return treatment;
       },
 
-      administer: (input) => send({ type: "administration/record", ...input, actor }),
+      administer: (input) => {
+        send({ type: "administration/record", ...input, actor });
+        track(
+          "Could not chart the dose",
+          api.patch(`/administrations/${input.id}`, {
+            status: input.status,
+            vitalsId: input.vitalsId,
+            notes: input.notes,
+          }),
+        );
+      },
 
       recordVitals: (input) => {
         const sequence = (db.counters.vitals ?? 0) + 1;
@@ -527,6 +629,7 @@ export function AppStoreProvider({
           recordedAt: new Date().toISOString(),
         };
         send({ type: "vitals/record", vitals, actor });
+        track("Could not save the observation", api.post("/vitals", { vitals }));
         return vitals;
       },
 
@@ -548,6 +651,7 @@ export function AppStoreProvider({
           createdAt: new Date().toISOString(),
         };
         send({ type: "invoice/create", invoice, actor });
+        track("Could not raise the invoice", api.post("/invoices", { invoice }));
         return invoice;
       },
 
@@ -557,6 +661,14 @@ export function AppStoreProvider({
         const transaction = splitPayment(invoice, method, roundMoney(amount), reference, actor.id);
         if (transaction.amountPaid <= 0) return;
         send({ type: "invoice/pay", invoiceId, transaction, actor });
+        track(
+          "Could not record the payment",
+          api.post(`/invoices/${invoiceId}/payments`, {
+            paymentMethod: method,
+            amount: transaction.amountPaid,
+            reference,
+          }),
+        );
       },
 
       uploadReport: (input) => {
@@ -580,34 +692,86 @@ export function AppStoreProvider({
           createdAt: new Date().toISOString(),
         };
         send({ type: "report/add", report, actor });
+        track("Could not store the report", api.post("/reports", { report }));
         return report;
       },
 
-      saveReportNote: (reportId, notes) => send({ type: "report/note", reportId, notes, actor }),
+      saveReportNote: (reportId, notes) => {
+        send({ type: "report/note", reportId, notes, actor });
+        track(
+          "Could not save the physician note",
+          api.patch(`/reports/${reportId}`, { doctorNotes: notes }),
+        );
+      },
 
-      toggleReportArchive: (reportId, archived, reason) =>
-        send({ type: "report/archive", reportId, archived, reason, actor }),
+      toggleReportArchive: (reportId, archived, reason) => {
+        send({ type: "report/archive", reportId, archived, reason, actor });
+        track(
+          "Could not update the report",
+          api.patch(`/reports/${reportId}`, {
+            archived,
+            resolvedReason: archived ? (reason ?? "Condition resolved") : null,
+          }),
+        );
+      },
 
-      resolvePatientCondition: (patientId, condition, action) =>
-        send({ type: "patient/resolveCondition", patientId, condition, action, actor }),
+      resolvePatientCondition: (patientId, condition, mode) => {
+        send({ type: "patient/resolveCondition", patientId, condition, action: mode, actor });
+        track(
+          "Could not update the patient record",
+          api.patch(`/patients/${patientId}`, { condition, action: mode }),
+        );
+      },
 
-      sendPatientInquiry: (patientId, subject, message, doctorId) =>
-        send({ type: "patient/inquiry", patientId, subject, message, doctorId, actor }),
+      sendPatientInquiry: (patientId, subject, message, doctorId) => {
+        send({ type: "patient/inquiry", patientId, subject, message, doctorId, actor });
+        track(
+          "Could not deliver the query",
+          api.post("/inquiries", { patientId, subject, message, doctorId }),
+        );
+      },
 
-      decideTransfer: (proposal, decision) => send({ type: "transfer/decide", proposal, decision, actor }),
+      decideTransfer: (proposal, decision) => {
+        send({ type: "transfer/decide", proposal, decision, actor });
+        track(
+          "Could not record the redistribution decision",
+          api.post(`/transfers/${proposal.id}/decision`, { proposal, decision }),
+        );
+      },
 
-      acknowledgeAlert: (alert) => send({ type: "alert/acknowledge", alert, actor }),
+      acknowledgeAlert: (alert) => {
+        send({ type: "alert/acknowledge", alert, actor });
+        track(
+          "Could not acknowledge the alert",
+          api.post(`/alerts/${alert.id}/acknowledge`, { alert }),
+        );
+      },
 
       resetDemo: () => {
-        try {
-          window.localStorage.removeItem(STORAGE_KEY);
-        } catch {
-          // Ignore storage failures; reseeding still works in memory.
-        }
-        send({ type: "demo/reset", db: createSeedDatabase() });
+        void (async () => {
+          setSync((current) => ({ ...current, pending: current.pending + 1 }));
+          try {
+            const { db: reseeded } = await api.resetDemo();
+            send({ type: "demo/reset", db: reseeded });
+            setSync((current) => ({
+              ...current,
+              pending: Math.max(0, current.pending - 1),
+              error: null,
+              lastSyncedAt: new Date().toISOString(),
+            }));
+          } catch (error) {
+            setSync((current) => ({
+              ...current,
+              pending: Math.max(0, current.pending - 1),
+              error: `Could not reseed the demonstration data. ${describeError(error)}`,
+            }));
+          }
+        })();
       },
+
+      resync: () => void load(),
     };
-  }, [actor, db.counters, db.invoices, staffById]);
+  }, [actor, api, db.counters, db.invoices, load, staffById, track]);
 
   const derived = useMemo<Derived>(
     () => ({
@@ -660,7 +824,29 @@ export function AppStoreProvider({
     ],
   );
 
-  const value = useMemo<AppStoreValue>(() => ({ state, derived, actions }), [state, derived, actions]);
+  const value = useMemo<AppStoreValue>(
+    () => ({ state, derived, actions, sync, profile, mode }),
+    [state, derived, actions, sync, profile, mode],
+  );
+
+  if (loadState === "loading") {
+    return (
+      <BootScreen
+        title="Loading the hospital record"
+        detail="Fetching the formulary, patient register and clinical ledger from the database."
+      />
+    );
+  }
+
+  if (loadState === "error") {
+    return (
+      <BootScreen
+        title="The hospital record could not be loaded"
+        detail={loadError ?? undefined}
+        onRetry={() => void load()}
+      />
+    );
+  }
 
   return <AppStoreContext.Provider value={value}>{children}</AppStoreContext.Provider>;
 }
@@ -683,3 +869,6 @@ export function useActions(): AppActions {
 export function useDerived(): Derived {
   return useApp().derived;
 }
+
+/** Reseed helper kept for tests and tooling that predate the API. */
+export { createSeedDatabase };

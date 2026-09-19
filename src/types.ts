@@ -652,6 +652,9 @@ export interface DatabaseState {
   counters: Record<string, number>;
 }
 
+/** Every collection in the database, i.e. anything a sync patch can carry. */
+export type CollectionKey = Exclude<keyof DatabaseState, "counters">;
+
 export interface SessionState {
   role: Role;
   /** Active staff member for staff roles. */
