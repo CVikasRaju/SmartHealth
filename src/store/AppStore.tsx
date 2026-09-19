@@ -686,7 +686,13 @@ export function AppStoreProvider({
           ocrExtractionStatus: "completed",
           ocrConfidence: input.ocrConfidence,
           rawOcrText: input.rawOcrText,
-          extractedFields: input.extractedFields,
+          extractedFields: input.extractedFields.map((field) => ({
+            ...field,
+            // Field ids are scoped to this report: the parser cannot know the
+            // report id when it runs, and a content hash alone collides across
+            // reports sharing an identical line (rejected by the primary key).
+            id: `field-${report.id}-${field.normalizedKey}`,
+          })),
           medicalDisclaimer: MEDICAL_DISCLAIMER,
           doctorNotes: "",
           createdAt: new Date().toISOString(),

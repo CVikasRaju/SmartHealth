@@ -1128,7 +1128,7 @@ const SEED_REPORT_META: SeedReportMeta[] = [
 function buildReports(): MedicalReport[] {
   return SEED_REPORT_META.map((meta) => {
     const rawOcrText = SEED_REPORT_TRANSCRIPTS[meta.id];
-    const extractedFields = parseReportText(rawOcrText);
+    const extractedFields = parseReportText(rawOcrText, meta.id);
     const ocrConfidence = extractedFields.length
       ? Number(
           (extractedFields.reduce((sum, field) => sum + field.confidence, 0) / extractedFields.length).toFixed(2),

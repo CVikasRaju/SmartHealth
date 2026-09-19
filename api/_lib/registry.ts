@@ -207,12 +207,15 @@ export const COLLECTIONS: Record<CollectionName, CollectionSpec> = {
         key: "wardStock",
         table: "ward_stock",
         parentColumn: "medicine_id",
-        orderBy: "ordinal",
-        toRow: plainChild({ parentColumn: "medicine_id", ordinal: true }),
+        // Ward stock has no ordinal column: the ward name is the natural key
+        // and its display order carries no meaning, unlike a prescription's
+        // line order. Writing the index the other child tables use was the
+        // seed's first failure against the live schema.
+        orderBy: "ward",
+        toRow: plainChild({ parentColumn: "medicine_id" }),
         fromRow: (row) => {
           const holding = fromColumns(row);
           delete holding.medicineId;
-          delete holding.ordinal;
           delete holding.updatedAt;
           holding.quantity = num(row.quantity);
           holding.parLevel = num(row.par_level);

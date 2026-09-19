@@ -740,7 +740,12 @@ export function matchBiomarkerLine(raw: string): ExtractedField | null {
     confidence = Math.min(0.99, Math.max(0.31, Number(confidence.toFixed(2))));
 
     return {
-      id: `field-${hashString(`${definition.key}:${line}`).toString(36)}`,
+      // Ids are minted by the caller (the report they belong to is unknown
+      // here). A content hash alone would collide across reports: two patients
+      // with an identical creatinine row would each carry a field with the
+      // same id, which the in-memory store tolerated and Postgres's primary
+      // key correctly rejected. See parseReportText for the report-scoped id.
+      id: "",
       testName: definition.displayName,
       normalizedKey: definition.key,
       value,
@@ -763,7 +768,7 @@ export function matchBiomarkerLine(raw: string): ExtractedField | null {
  * mentions keep the highest-confidence reading, mirroring how a human would
  * take the printed result column over a value repeated in a summary footer.
  */
-export function parseReportText(text: string): ExtractedField[] {
+export function parseReportText(text: string, reportId?: string): ExtractedField[] {
   const byKey = new Map<string, ExtractedField>();
 
   for (const rawLine of text.split(/\r?\n/)) {
@@ -776,9 +781,19 @@ export function parseReportText(text: string): ExtractedField[] {
   }
 
   // Preserve dictionary order so panels read the way a lab prints them.
-  return BIOMARKER_DICTIONARY.filter((definition) => byKey.has(definition.key)).map(
+  const fields = BIOMARKER_DICTIONARY.filter((definition) => byKey.has(definition.key)).map(
     (definition) => byKey.get(definition.key) as ExtractedField,
   );
+
+  // Scope each field id to its report when the caller knows it. The in-document
+  // content hash still disambiguates two different lines within one report.
+  if (reportId !== undefined) {
+    for (const field of fields) {
+      field.id = `field-${hashString(`${reportId}:${field.normalizedKey}:${field.valueText}`).toString(36)}`;
+    }
+  }
+
+  return fields;
 }
 
 /* ------------------------------------------------------------------ */
