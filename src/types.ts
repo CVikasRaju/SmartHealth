@@ -218,7 +218,10 @@ export interface TransferProposal {
   surplusAtSource: number;
   deficitAtTarget: number;
   rationale: string;
+  /** Projected reduction in the molecule's facility SPS score. */
   estimatedSpsDrop: number;
+  /** Wards whose cover is lifted back above the at-risk threshold by this move. */
+  wardsRecovered: number;
   status: "proposed" | "approved" | "rejected";
   decidedAt?: string;
   decidedBy?: string;

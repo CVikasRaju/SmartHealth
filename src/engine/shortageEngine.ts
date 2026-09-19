@@ -540,9 +540,17 @@ export function summarisePortfolio(assessments: RiskAssessment[], medicines: Med
 }
 
 /**
- * Propose inter-ward redistributions. A proposal is only produced when a ward
- * genuinely holds stock above its own par level, because moving stranded stock
- * into a short ward is the only redistribution that lowers facility risk.
+ * Propose inter-ward redistributions.
+ *
+ * A proposal is only produced when a ward genuinely holds stock above its own
+ * par level, because moving stranded stock into a short ward is the only
+ * redistribution that lowers facility risk.
+ *
+ * A move is also dropped when it changes nothing: once the facility score is
+ * pinned at the ceiling by a genuine facility-wide shortfall, shuffling stock
+ * between wards cannot improve it, and offering a "-0 point" action would be
+ * misleading. Such a case is reported through the purchase-order playbook
+ * instead.
  */
 export function buildTransferProposals(
   medicines: Medicine[],
@@ -588,6 +596,10 @@ export function buildTransferProposals(
         referenceDate: reference,
       });
 
+      const spsDrop = round(Math.max(0, assessment.sps - projected.sps), 1);
+      const wardsRecovered = Math.max(0, assessment.wardsAtRisk - projected.wardsAtRisk);
+      if (spsDrop < 0.1 && wardsRecovered === 0) continue;
+
       proposals.push({
         id,
         medicineId: medicine.id,
@@ -605,14 +617,17 @@ export function buildTransferProposals(
             source.quantity - source.parLevel,
             0,
           )} units above par.`,
-        estimatedSpsDrop: round(Math.max(0, assessment.sps - projected.sps), 1),
+        estimatedSpsDrop: spsDrop,
+        wardsRecovered,
         status: "proposed",
       });
     }
   }
 
   // Biggest risk reduction first, so the top action is the one that matters.
-  return proposals.sort((a, b) => b.estimatedSpsDrop - a.estimatedSpsDrop);
+  return proposals.sort(
+    (a, b) => b.estimatedSpsDrop - a.estimatedSpsDrop || b.wardsRecovered - a.wardsRecovered,
+  );
 }
 
 /** Move units between two wards, leaving total facility stock untouched. */

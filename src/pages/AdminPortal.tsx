@@ -174,7 +174,13 @@ function ControlRoom() {
                   <div className="text-right">
                     <p className="text-[10px] uppercase tracking-wider text-slate-500">SPS drop</p>
                     <p className="text-sm font-semibold tabular-nums text-emerald-300">
-                      -{proposal.estimatedSpsDrop}
+                      {proposal.estimatedSpsDrop > 0 ? `-${proposal.estimatedSpsDrop}` : "—"}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[10px] uppercase tracking-wider text-slate-500">Wards</p>
+                    <p className="text-sm font-semibold tabular-nums text-sky-300">
+                      {proposal.wardsRecovered > 0 ? `+${proposal.wardsRecovered}` : "—"}
                     </p>
                   </div>
                   {decidingId === proposal.id ? (
