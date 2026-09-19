@@ -187,6 +187,7 @@ export interface CreateInvoiceInput {
 export interface AppActions {
   setRole: (role: Role) => void;
   setView: (view: string) => void;
+  setActiveStaff: (staffId: string) => void;
   setActivePatient: (patientId: string) => void;
   registerPatient: (input: RegisterPatientInput) => Patient;
   scheduleAppointment: (input: ScheduleAppointmentInput) => Appointment;
@@ -416,6 +417,7 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
     return {
       setRole: (role) => send({ type: "session/setRole", role }),
       setView: (view) => send({ type: "session/setView", view }),
+      setActiveStaff: (staffId) => send({ type: "session/setStaff", staffId }),
       setActivePatient: (patientId) => send({ type: "session/setPatient", patientId }),
 
       registerPatient: (input) => {

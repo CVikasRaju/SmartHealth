@@ -37,6 +37,7 @@ export interface ActorRef {
 
 export type AppAction =
   | { type: "session/setRole"; role: Role }
+  | { type: "session/setStaff"; staffId: string }
   | { type: "session/setPatient"; patientId: string }
   | { type: "session/setView"; view: string }
   | { type: "patient/register"; patient: Patient; actor: ActorRef }
@@ -115,6 +116,9 @@ export function appReducer(state: AppState, action: AppAction): AppState {
   switch (action.type) {
     case "session/setRole":
       return { ...state, session: { ...state.session, role: action.role } };
+
+    case "session/setStaff":
+      return { ...state, session: { ...state.session, staffId: action.staffId } };
 
     case "session/setPatient":
       return { ...state, session: { ...state.session, patientId: action.patientId } };
