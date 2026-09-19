@@ -16,6 +16,7 @@ import type {
   AuditEntry,
   CollectionKey,
   DatabaseState,
+  Hospital,
   Invoice,
   MedicalReport,
   Patient,
@@ -39,9 +40,12 @@ export interface ActorRef {
 
 export type AppAction =
   | { type: "session/setRole"; role: Role }
+  | { type: "session/setHospital"; hospitalId: string }
   | { type: "session/setStaff"; staffId: string }
   | { type: "session/setPatient"; patientId: string }
   | { type: "session/setView"; view: string }
+  | { type: "hospital/onboard"; hospital: Hospital; actor: ActorRef }
+  | { type: "hospital/update"; id: string; patch: Partial<Hospital>; actor: ActorRef }
   | { type: "patient/register"; patient: Patient; actor: ActorRef }
   | { type: "appointment/create"; appointment: Appointment; actor: ActorRef }
   | {
@@ -133,6 +137,9 @@ export function appReducer(state: AppState, action: AppAction): AppState {
     case "session/setRole":
       return { ...state, session: { ...state.session, role: action.role } };
 
+    case "session/setHospital":
+      return { ...state, session: { ...state.session, hospitalId: action.hospitalId } };
+
     case "session/setStaff":
       return { ...state, session: { ...state.session, staffId: action.staffId } };
 
@@ -141,6 +148,34 @@ export function appReducer(state: AppState, action: AppAction): AppState {
 
     case "session/setView":
       return { ...state, activeView: action.view };
+
+    case "hospital/onboard": {
+      const db = applyAudit(
+        { ...state.db, hospitals: [action.hospital, ...state.db.hospitals] },
+        action.actor,
+        "hospital.onboard",
+        action.hospital.code,
+        `Onboarded new healthcare facility: ${action.hospital.name} (${action.hospital.location}, ${action.hospital.city}) with ${action.hospital.bedCapacity} beds.`,
+      );
+      return { ...state, db: bumpCounter(db, "hospital") };
+    }
+
+    case "hospital/update": {
+      const target = state.db.hospitals.find((h) => h.id === action.id);
+      const db = applyAudit(
+        {
+          ...state.db,
+          hospitals: state.db.hospitals.map((h) =>
+            h.id === action.id ? { ...h, ...action.patch } : h,
+          ),
+        },
+        action.actor,
+        "hospital.update",
+        target ? target.code : action.id,
+        `Updated hospital status / metadata for ${target ? target.name : action.id}.`,
+      );
+      return { ...state, db };
+    }
 
     case "patient/register": {
       const db = applyAudit(

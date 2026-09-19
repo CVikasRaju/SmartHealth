@@ -491,14 +491,44 @@ async function main(): Promise<void> {
     body: { report: { ...report, id: "report-own", patientId: "patient-2" } },
     actor: "demo-patient-2",
   });
-  assert("a patient may upload to their own record", patientOwnReport.status === 200, JSON.stringify(patientOwnReport.payload));
+  assert("a patient may upload to their own record", patientOwnReport.status === 200);
+
+  const superadminBoot = await call({ path: "/bootstrap", actor: "demo-superadmin-1" });
+  const superScoped = superadminBoot.payload.data?.db;
+  assert("a super admin sees hospital infrastructure", (superScoped?.hospitals?.length ?? 0) >= 5);
+  assert("a super admin sees zero patient health records (PHI isolation)", superScoped?.patients?.length === 0);
+  assert("a super admin sees zero patient lab reports", superScoped?.reports?.length === 0);
+  assert("a super admin sees zero patient vitals or clinical treatments", superScoped?.treatments?.length === 0 && superScoped?.vitals?.length === 0);
+
+  const hospitalOnboard = await call({
+    method: "POST",
+    path: "/hospitals",
+    body: {
+      hospital: {
+        id: "hosp-test-mgl",
+        code: "TEST-MGL-99",
+        name: "Test Community Hospital",
+        location: "Suratkal, Mangalore",
+        city: "Mangalore",
+        state: "Karnataka",
+        tier: "secondary",
+        bedCapacity: 200,
+        activeWards: 4,
+        status: "active",
+        contactEmail: "admin@testhospital.org",
+        phone: "+91 824 222 9999",
+      },
+    },
+    actor: "demo-superadmin-1",
+  });
+  assert("a super admin can onboard a hospital facility", hospitalOnboard.status === 200);
 
   /* -------- Registration and reset -------- */
 
   const profiles = await call({ path: "/demo/profiles" });
   assert(
     "demo identities are listed for the sign-in screen",
-    profiles.payload.data?.profiles?.length === db.staff.length + db.patients.length,
+    profiles.payload.data?.profiles?.length === db.staff.length + db.patients.length + 1,
   );
 
   const reset = await call({ method: "POST", path: "/demo/reset" });

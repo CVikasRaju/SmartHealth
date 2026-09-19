@@ -18,6 +18,7 @@ import { AppStoreProvider, useApp } from "@/store/AppStore";
 import AppShell from "@/ui/AppShell";
 import BootScreen from "@/ui/BootScreen";
 import LoginPage from "@/pages/LoginPage";
+import SuperAdminPortal from "@/pages/SuperAdminPortal";
 import AdminPortal from "@/pages/AdminPortal";
 import DoctorPortal from "@/pages/DoctorPortal";
 import NursePortal from "@/pages/NursePortal";
@@ -26,6 +27,7 @@ import CashierPortal from "@/pages/CashierPortal";
 import PatientPortal from "@/pages/PatientPortal";
 
 const PORTALS: Record<Role, ComponentType> = {
+  superadmin: SuperAdminPortal,
   admin: AdminPortal,
   doctor: DoctorPortal,
   nurse: NursePortal,

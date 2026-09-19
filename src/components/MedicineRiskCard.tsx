@@ -67,26 +67,26 @@ export default function MedicineRiskCard({
 
           <div className="mt-3 grid grid-cols-2 gap-x-6 gap-y-2 sm:grid-cols-4">
             <div>
-              <p className="text-[10px] uppercase tracking-[0.14em] text-ink-400">SPS score</p>
+              <p className="text-[10px] uppercase tracking-[0.14em] text-ink-400">Risk Score (0-100)</p>
               <p className="text-lg font-semibold tabular-nums" style={{ color: token.hex }}>
                 {assessment.sps}
               </p>
             </div>
             <div>
-              <p className="text-[10px] uppercase tracking-[0.14em] text-ink-400">Days of cover</p>
-              <p className="text-lg font-semibold tabular-nums text-ink-900">{formatDays(assessment.dir)}</p>
+              <p className="text-[10px] uppercase tracking-[0.14em] text-ink-400">Stock Left (Days)</p>
+              <p className="text-lg font-semibold tabular-nums text-ink-900">{formatDays(assessment.dir)}d</p>
             </div>
             <div>
-              <p className="text-[10px] uppercase tracking-[0.14em] text-ink-400">Dynamic lead time</p>
+              <p className="text-[10px] uppercase tracking-[0.14em] text-ink-400">Supplier Delivery</p>
               <p className="text-lg font-semibold tabular-nums text-ink-900">
                 {assessment.dynamicLeadTimeDays.toFixed(1)}d
               </p>
             </div>
             <div>
-              <p className="text-[10px] uppercase tracking-[0.14em] text-ink-400">EWMA burn rate</p>
+              <p className="text-[10px] uppercase tracking-[0.14em] text-ink-400">Daily Hospital Usage</p>
               <p className="text-lg font-semibold tabular-nums text-ink-900">
                 {assessment.dailyBurnRate.toFixed(1)}
-                <span className="ml-1 text-[10px] font-normal text-ink-400">/day</span>
+                <span className="ml-1 text-[10px] font-normal text-ink-400">units/day</span>
               </p>
             </div>
           </div>
@@ -103,7 +103,7 @@ export default function MedicineRiskCard({
           />
           <Button size="sm" variant="ghost" onClick={() => setOpen((value) => !value)}>
             <Icon name={open ? "close" : "search"} size={13} />
-            {open ? "Hide evidence" : "Show evidence"}
+            {open ? "Hide Details" : "View Breakdown"}
           </Button>
         </div>
       </div>
@@ -115,7 +115,7 @@ export default function MedicineRiskCard({
             <p className="text-[10px] uppercase tracking-[0.12em] text-ink-400">{driver.label}</p>
             <p className="mt-1 flex items-baseline gap-1.5 text-xs">
               <span className="font-semibold tabular-nums text-ink-900">{driver.points.toFixed(1)}</span>
-              <span className="text-ink-400">/ {driver.maxPoints} pts</span>
+              <span className="text-ink-400">/ {driver.maxPoints} pts weight</span>
             </p>
             <ProgressBar
               value={driver.points}
@@ -130,11 +130,39 @@ export default function MedicineRiskCard({
 
       {open ? (
         <div className="space-y-4 border-t border-rule p-4">
+          {/* Plain English summary callout */}
+          <div className={cx(
+            "rounded-lg border p-3 text-xs leading-relaxed",
+            assessment.tier === "critical"
+              ? "border-risk-critical/30 bg-risk-critical/[0.05] text-ink-900"
+              : assessment.tier === "high"
+              ? "border-risk-high/30 bg-risk-high/[0.05] text-ink-900"
+              : "border-rule bg-surface text-ink-800"
+          )}>
+            <p className="font-semibold flex items-center gap-1.5 mb-1">
+              <Icon name="info" size={14} className={assessment.tier === "critical" ? "text-risk-critical" : "text-accent"} />
+              Plain-English Situation Summary:
+            </p>
+            <p>
+              {assessment.dir < assessment.dynamicLeadTimeDays ? (
+                <>
+                  Current stock runs out in <strong>{formatDays(assessment.dir)} days</strong>, but supplier refills require <strong>{assessment.dynamicLeadTimeDays.toFixed(1)} days</strong> to arrive.
+                  This leaves a dangerous <strong>{(assessment.dynamicLeadTimeDays - assessment.dir).toFixed(1)}-day stockout gap</strong> unless an emergency transfer or fast-track order is dispatched immediately.
+                </>
+              ) : (
+                <>
+                  Current stock covers <strong>{formatDays(assessment.dir)} days</strong> against a <strong>{assessment.dynamicLeadTimeDays.toFixed(1)}-day</strong> delivery window.
+                  Inventory levels are manageable, but consumption trends should continue to be monitored.
+                </>
+              )}
+            </p>
+          </div>
+
           {/* Playbook action. */}
           <div className="rounded-lg border border-rule bg-paper p-3">
             <p className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-500">
               <Icon name="bolt" size={12} className="text-accent" />
-              Playbook action
+              Recommended Action
             </p>
             <p className="mt-1.5 text-xs leading-relaxed text-ink-900">{assessment.recommendation}</p>
             <dl className="mt-3 grid gap-x-6 gap-y-2 text-[11px] sm:grid-cols-3">
@@ -158,7 +186,7 @@ export default function MedicineRiskCard({
           {/* Signal evidence. */}
           <div>
             <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-500">
-              Triangulated signals · Psi {assessment.psi.toFixed(1)}
+              Risk Factors &amp; Diagnostics · Impact Score {assessment.psi.toFixed(1)}/100
             </p>
             <div className="grid gap-2 lg:grid-cols-2">
               {assessment.drivers.map((driver) => (
@@ -178,26 +206,26 @@ export default function MedicineRiskCard({
           <div className="grid gap-4 lg:grid-cols-2">
             <div>
               <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-500">
-                Stock position
+                Current Inventory Breakdown
               </p>
               <dl className="space-y-1.5 text-xs">
                 {[
-                  { label: "Physical on hand", value: `${medicine.currentStock} ${medicine.unit}` },
-                  { label: "Soft reserved", value: `${medicine.allocatedStock} ${medicine.unit}` },
+                  { label: "Physical stock in pharmacy", value: `${medicine.currentStock} ${medicine.unit}` },
+                  { label: "Reserved for active patient prescriptions", value: `${medicine.allocatedStock} ${medicine.unit}` },
                   {
-                    label: "Stranded above ward par",
+                    label: "Excess buffer stored in wards",
                     value: `${assessment.strandedUnits} ${medicine.unit}`,
                   },
                   {
-                    label: "Effective available",
+                    label: "Immediately available to dispense",
                     value: (
                       <span className="font-semibold text-accent">
                         {assessment.availableStock} {medicine.unit}
                       </span>
                     ),
                   },
-                  { label: "Reorder threshold", value: `${medicine.reorderThreshold} ${medicine.unit}` },
-                  { label: "Economic order quantity", value: `${medicine.economicOrderQuantity} ${medicine.unit}` },
+                  { label: "Automated reorder point", value: `${medicine.reorderThreshold} ${medicine.unit}` },
+                  { label: "Standard order batch size", value: `${medicine.economicOrderQuantity} ${medicine.unit}` },
                 ].map((row) => (
                   <div key={row.label} className="flex items-center justify-between gap-4 border-b border-rule-soft pb-1.5">
                     <dt className="text-ink-500">{row.label}</dt>
@@ -207,7 +235,7 @@ export default function MedicineRiskCard({
               </dl>
               {alternativeLabels.length > 0 ? (
                 <p className="mt-3 text-[11px] leading-relaxed text-ink-500">
-                  <span className="font-semibold text-ink-700">Therapeutic equivalents on hand:</span>{" "}
+                  <span className="font-semibold text-ink-700">In-stock alternative medicines:</span>{" "}
                   {alternativeLabels.join(", ")}
                 </p>
               ) : null}
@@ -215,7 +243,7 @@ export default function MedicineRiskCard({
 
             <div>
               <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-500">
-                Ward cover · {assessment.wardsAtRisk} ward(s) under {WARD_AT_RISK_DAYS} days
+                Ward Stock Coverage · {assessment.wardsAtRisk} ward(s) under {WARD_AT_RISK_DAYS} days
               </p>
               <ul className="space-y-2">
                 {coverage.map((ward) => (
@@ -224,9 +252,9 @@ export default function MedicineRiskCard({
                       <span className="truncate text-ink-700">{WARD_LABELS[ward.ward]}</span>
                       <span className="shrink-0 tabular-nums text-ink-500">
                         <span className={ward.atRisk ? "font-semibold text-risk-critical" : "text-ink-900"}>
-                          {formatDays(ward.coverDays)}d
+                          {formatDays(ward.coverDays)}d left
                         </span>{" "}
-                        · {ward.quantity}/{ward.parLevel} par
+                        · {ward.quantity}/{ward.parLevel} target
                       </span>
                     </div>
                     <ProgressBar
@@ -245,28 +273,28 @@ export default function MedicineRiskCard({
           {/* Burn curve. */}
           <div>
             <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-500">
-              EWMA consumption vs pre-surge baseline · {percent(assessment.burnTrendPct, 1)} change
+              Daily Usage Trend vs Normal Average · {percent(assessment.burnTrendPct, 1)} surge
             </p>
             <LineChart
               height={200}
               series={[
                 {
                   key: "baseline",
-                  label: "Pre-surge baseline",
+                  label: "Normal Historical Average",
                   color: "#a1a7af",
                   dashed: true,
                   points: baselineSeries.map((value, index) => ({ label: dayLabels[index], value })),
                 },
                 {
                   key: "ewma",
-                  label: "EWMA burn rate (α 0.35)",
+                  label: "Recent Daily Consumption Rate",
                   color: token.hex,
                   area: true,
                   points: burnSeries.map((value, index) => ({ label: dayLabels[index], value })),
                 },
               ]}
-              valueFormat={(value) => value.toFixed(1)}
-              ariaLabel={`${assessment.brandName} EWMA burn rate`}
+              valueFormat={(value) => `${value.toFixed(1)}/day`}
+              ariaLabel={`${assessment.brandName} consumption trend`}
             />
           </div>
         </div>

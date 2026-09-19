@@ -58,8 +58,8 @@ export default function AlertRail() {
             <div>
               <p className="sm-eyebrow">Risk feed</p>
               <p className="mt-1 text-[11px] text-ink-500">
-                {derived.portfolio.critical} critical &middot; {derived.portfolio.high} high &middot; peak SPS{" "}
-                {derived.portfolio.peakScore}
+                {derived.portfolio.critical} critical &middot; {derived.portfolio.high} high &middot; peak risk index{" "}
+                {derived.portfolio.peakScore}/100
               </p>
             </div>
             {canViewShortage ? (

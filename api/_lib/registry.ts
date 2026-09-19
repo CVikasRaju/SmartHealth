@@ -15,6 +15,7 @@
  */
 
 export type CollectionName =
+  | "hospitals"
   | "staff"
   | "patients"
   | "medicines"
@@ -29,6 +30,7 @@ export type CollectionName =
   | "auditLog";
 
 export const COLLECTION_NAMES: CollectionName[] = [
+  "hospitals",
   "staff",
   "patients",
   "medicines",
@@ -198,6 +200,7 @@ const REPORT_FIELD_SPEC: ChildSpec = {
 /* ------------------------------------------------------------------ */
 
 export const COLLECTIONS: Record<CollectionName, CollectionSpec> = {
+  hospitals: { table: "hospitals", children: [], orderBy: "created_at", ascending: false },
   staff: { table: "staff", children: [], orderBy: "employee_id", ascending: true },
   patients: { table: "patients", children: [], orderBy: "registered_at", ascending: false },
   medicines: {

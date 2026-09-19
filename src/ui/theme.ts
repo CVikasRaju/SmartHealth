@@ -101,10 +101,16 @@ export interface RoleMeta {
  * so six portals stay visually distinct without looking like six products.
  */
 export const ROLE_META: Record<Role, RoleMeta> = {
+  superadmin: {
+    label: "Super Admin",
+    persona: "Dr. Rajeshwar Hegde · Health Network Governance",
+    summary: "Multi-tenant hospital onboarding, admin provisioning, and inter-hospital stock balancing (Strict Privacy / Zero PHI Access).",
+    accent: "#3730a3",
+  },
   admin: {
-    label: "Admin",
-    persona: "Meera Krishnan · Hospital Administration",
-    summary: "System-wide shortage control room, scenario simulation and hospital analytics.",
+    label: "Hospital Admin",
+    persona: "Meera Krishnan · KMC Hospital Administration",
+    summary: "Facility-level shortage control room, scenario simulation and hospital analytics.",
     accent: "#14416b",
   },
   doctor: {

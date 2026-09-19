@@ -136,35 +136,67 @@ function patch(collections: StatePatch["collections"], counters?: Record<string,
 /**
  * Reduce the snapshot to what the caller is entitled to see. Staff receive the
  * whole hospital record; a patient account receives only its own clinical,
- * billing and report data plus the consultant directory, so a patient login can
- * never read another patient's results or the hospital's supply position.
+ * billing and report data plus the consultant directory.
+ *
+ * Super Admin receives platform governance entities (hospitals, facility admins,
+ * and aggregate regional shortage telemetry) with ZERO PHI / patient clinical records.
  */
 export function scopeSnapshot(db: DatabaseState, profile: ProfileRecord): DatabaseState {
-  if (profile.role !== "patient") return db;
+  if (profile.role === "patient") {
+    const patientId = profile.patientId;
+    const own = <T extends { patientId: string }>(rows: T[]): T[] =>
+      rows.filter((row) => row.patientId === patientId);
 
-  const patientId = profile.patientId;
-  const own = <T extends { patientId: string }>(rows: T[]): T[] =>
-    rows.filter((row) => row.patientId === patientId);
+    return {
+      hospitals: db.hospitals ?? [],
+      staff: db.staff
+        .filter((member) => member.role === "doctor")
+        .map((member) => ({ ...member, contactNumber: "", email: "" })),
+      patients: db.patients.filter((patient) => patient.id === patientId),
+      // The formulary is not exposed: supply position is commercial information.
+      medicines: [],
+      appointments: own(db.appointments),
+      treatments: own(db.treatments),
+      administrations: own(db.administrations),
+      vitals: own(db.vitals),
+      invoices: own(db.invoices),
+      reports: own(db.reports),
+      transferProposals: [],
+      alerts: [],
+      // The ledger names other patients, so it stays with staff.
+      auditLog: [],
+      counters: db.counters,
+    };
+  }
 
-  return {
-    staff: db.staff
-      .filter((member) => member.role === "doctor")
-      .map((member) => ({ ...member, contactNumber: "", email: "" })),
-    patients: db.patients.filter((patient) => patient.id === patientId),
-    // The formulary is not exposed: supply position is commercial information.
-    medicines: [],
-    appointments: own(db.appointments),
-    treatments: own(db.treatments),
-    administrations: own(db.administrations),
-    vitals: own(db.vitals),
-    invoices: own(db.invoices),
-    reports: own(db.reports),
-    transferProposals: [],
-    alerts: [],
-    // The ledger names other patients, so it stays with staff.
-    auditLog: [],
-    counters: db.counters,
-  };
+  if (profile.role === "superadmin") {
+    // ZERO PHI ACCESS GUARANTEE (HIPAA Privacy Compliance):
+    // Super Admin sees hospital infrastructure and aggregate network telemetry.
+    // Patients, individual appointments, treatments, vitals, invoices, and lab reports are strictly omitted.
+    return {
+      hospitals: db.hospitals ?? [],
+      staff: db.staff.filter((member) => member.role === "admin"),
+      patients: [],
+      medicines: db.medicines,
+      appointments: [],
+      treatments: [],
+      administrations: [],
+      vitals: [],
+      invoices: [],
+      reports: [],
+      transferProposals: db.transferProposals,
+      alerts: db.alerts,
+      auditLog: db.auditLog.filter(
+        (entry) =>
+          entry.action.startsWith("hospital.") ||
+          entry.action.startsWith("transfer.") ||
+          entry.action.startsWith("alert."),
+      ),
+      counters: db.counters,
+    };
+  }
+
+  return db;
 }
 
 /* ------------------------------------------------------------------ */
@@ -669,8 +701,55 @@ export async function handleAcknowledgeAlert(ctx: RequestContext): Promise<Route
 /* ------------------------------------------------------------------ */
 
 export async function handleResetDemo(ctx: RequestContext): Promise<RouteResult> {
-  requireRole(ctx, ["admin"]);
+  requireRole(ctx, ["admin", "superadmin"]);
   const seed = createSeedDatabase();
   await ctx.repo.reset(seed);
   return ok({ db: scopeSnapshot(seed, ctx.actor), counters: seed.counters });
+}
+
+/* ------------------------------------------------------------------ */
+/* Multi-tenant hospital management                                   */
+/* ------------------------------------------------------------------ */
+
+export async function handleCreateHospital(ctx: RequestContext): Promise<RouteResult> {
+  requireRole(ctx, ["superadmin", "admin"]);
+  const body = readBody(ctx);
+  const hospital = asRecord(body.hospital, "hospital");
+  requireString(hospital, "id");
+  const name = requireString(hospital, "name");
+  const code = requireString(hospital, "code");
+
+  await ctx.repo.insert("hospitals", hospital);
+  const counters = await audit(
+    ctx,
+    "hospital.onboard",
+    code,
+    `Onboarded healthcare facility ${name} (${code}) into the regional network.`,
+    { hospital: 1 },
+  );
+
+  return patch({ hospitals: [{ ...hospital }] }, counters);
+}
+
+export async function handlePatchHospital(ctx: RequestContext): Promise<RouteResult> {
+  requireRole(ctx, ["superadmin", "admin"]);
+  const hospitalId = ctx.params.id;
+  const body = readBody(ctx);
+
+  const updates: Record<string, unknown> = {};
+  if (typeof body.status === "string") updates.status = body.status;
+  if (typeof body.adminName === "string") updates.adminName = body.adminName;
+  if (typeof body.adminEmail === "string") updates.adminEmail = body.adminEmail;
+  if (typeof body.bedCapacity === "number") updates.bedCapacity = body.bedCapacity;
+  if (typeof body.activeWards === "number") updates.activeWards = body.activeWards;
+
+  await ctx.repo.update("hospitals", hospitalId, updates);
+  const counters = await audit(
+    ctx,
+    "hospital.update",
+    hospitalId,
+    `Updated hospital metadata / status for facility ${hospitalId}.`,
+  );
+
+  return patch({ hospitals: [{ id: hospitalId, ...updates }] }, counters);
 }

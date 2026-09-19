@@ -16,7 +16,7 @@ import { useClickOutside } from "@/ui/hooks";
 import Icon from "@/ui/Icon";
 import { cx } from "@/utils/format";
 
-const ROLE_ORDER: Role[] = ["admin", "doctor", "nurse", "receptionist", "cashier", "patient"];
+const ROLE_ORDER: Role[] = ["superadmin", "admin", "doctor", "nurse", "receptionist", "cashier", "patient"];
 
 export default function RoleSwitcher() {
   const { state, actions } = useApp();

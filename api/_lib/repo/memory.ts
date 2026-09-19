@@ -44,7 +44,18 @@ function deriveProfiles(db: DatabaseState): ProfileRecord[] {
     lastLogin: null,
   }));
 
-  return [...staff, ...patients];
+  const superadmin: ProfileRecord = {
+    id: "demo-superadmin-1",
+    email: "superadmin@smartmedic.io",
+    fullName: "Dr. Rajeshwar Hegde",
+    role: "superadmin",
+    staffId: null,
+    patientId: null,
+    isActive: true,
+    lastLogin: null,
+  };
+
+  return [superadmin, ...staff, ...patients];
 }
 
 export function createMemoryRepository(seed?: DatabaseState): Repository {

@@ -107,7 +107,7 @@ function RiskSummary() {
       <span className="text-rule-strong">|</span>
       <span>{portfolio.high} high</span>
       <span className="text-rule-strong">|</span>
-      <span>peak SPS {portfolio.peakScore}</span>
+      <span>peak risk {portfolio.peakScore}/100</span>
     </span>
   );
 }
@@ -211,8 +211,33 @@ export default function AppShell({ children }: { children: ReactNode }) {
             {worst && (role === "admin" || role === "doctor") ? (
               <span className="ml-auto inline-flex items-center gap-1.5 text-ink-500">
                 <Icon name="alert" size={12} className="text-risk-critical" />
-                Highest risk: <span className="font-semibold text-ink-900">{worst.brandName}</span> at{" "}
-                {worst.sps} SPS ({formatDays(worst.dir)} days cover)
+                Highest stockout risk: <span className="font-semibold text-ink-900">{worst.brandName}</span> (Risk Score:{" "}
+                {worst.sps}/100 · {formatDays(worst.dir)} days left)
+              </span>
+            ) : role === "superadmin" ? (
+              <span className="ml-auto inline-flex items-center gap-1.5 text-ink-500">
+                <Icon name="check" size={12} className="text-risk-normal" />
+                Regional Network: <span className="font-semibold text-ink-900">5 Mangalore Facilities</span> (3,500 Beds Active · Zero PHI Access)
+              </span>
+            ) : role === "nurse" ? (
+              <span className="ml-auto inline-flex items-center gap-1.5 text-ink-500">
+                <Icon name="emar" size={12} className="text-accent" />
+                Active Shift: <span className="font-semibold text-ink-900">ICU &amp; General Ward</span> (Bedside eMAR Round in Progress)
+              </span>
+            ) : role === "cashier" ? (
+              <span className="ml-auto inline-flex items-center gap-1.5 text-ink-500">
+                <Icon name="invoice" size={12} className="text-accent" />
+                Billing Counter: <span className="font-semibold text-ink-900">Live POS &amp; Insurance Desk</span>
+              </span>
+            ) : role === "receptionist" ? (
+              <span className="ml-auto inline-flex items-center gap-1.5 text-ink-500">
+                <Icon name="calendar" size={12} className="text-accent" />
+                Front Desk: <span className="font-semibold text-ink-900">Registration &amp; OPD Triage Active</span>
+              </span>
+            ) : role === "patient" ? (
+              <span className="ml-auto inline-flex items-center gap-1.5 text-ink-500">
+                <Icon name="report" size={12} className="text-accent" />
+                Patient Health Record: <span className="font-semibold text-ink-900">AI Medical Report Simplifier</span>
               </span>
             ) : null}
             {sync.error ? (

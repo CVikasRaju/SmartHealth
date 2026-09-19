@@ -763,8 +763,8 @@ export function simulateScenario(
 
   const headline =
     escalated === 0
-      ? `No molecule changes risk band under "${input.label}". Portfolio stays at ${criticalCount} critical and ${highCount} high.`
-      : `"${input.label}" pushes ${escalated} molecule${escalated === 1 ? "" : "s"} into a worse risk band, leaving ${criticalCount} critical and ${highCount} high.`;
+      ? `No medicines escalate under "${input.label}". Formulary remains stable at ${criticalCount} critical and ${highCount} high-risk medicines.`
+      : `"${input.label}" causes ${escalated} medicine${escalated === 1 ? "" : "s"} to escalate into high-risk shortage levels, resulting in ${criticalCount} critical and ${highCount} high-risk medicines.`;
 
   return { input, projections, criticalCount, highCount, headline };
 }

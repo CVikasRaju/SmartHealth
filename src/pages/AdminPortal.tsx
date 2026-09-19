@@ -90,11 +90,11 @@ function ControlRoom() {
           </p>
         </div>
 
-        <div className="grid lg:grid-cols-[15rem_1fr]">
-          <div className="flex flex-col items-center justify-center gap-2 border-b border-rule-soft p-3.5 lg:border-b-0 lg:border-r">
+        <div className="grid lg:grid-cols-[16rem_1fr]">
+          <div className="flex flex-col items-center justify-center gap-2 border-b border-rule-soft p-4 lg:border-b-0 lg:border-r">
             <GaugeArc
               value={portfolio.peakScore}
-              label="Peak SPS"
+              label="Peak Risk Index"
               color={RISK_TOKENS[portfolio.peakScore >= 85 ? "critical" : portfolio.peakScore >= 60 ? "high" : "moderate"].hex}
               thresholds={[
                 { at: 30, label: "moderate" },
@@ -103,89 +103,109 @@ function ControlRoom() {
               ]}
               size={170}
             />
-            <p className="text-center text-[11px] leading-relaxed text-ink-500">
-              Mean score across the {portfolio.total}-molecule formulary is{" "}
-              <span className="font-semibold text-ink-900">{portfolio.meanScore}</span>.
-            </p>
+            <div className="text-center text-xs leading-relaxed mt-1">
+              <span className="inline-block font-semibold px-2 py-0.5 rounded-sm text-[11px] border border-rose-300 bg-rose-50 text-rose-800">
+                🔴 Severe Stockout Threat
+              </span>
+              <p className="mt-1.5 text-[11px] text-ink-600">
+                {portfolio.critical} medicines will run out <span className="font-semibold text-ink-900">before</span> supplier delivers.
+              </p>
+            </div>
           </div>
 
           <div className="space-y-3 p-3.5">
             <MetricStrip
               items={[
                 {
-                  label: "Critical",
+                  label: "Critical Shortage",
                   value: portfolio.critical,
                   tone: portfolio.critical > 0 ? "text-risk-critical" : "text-ink-900",
-                  hint: "Score at or above 85",
+                  hint: "Runs out in < 5 days",
                 },
                 {
-                  label: "High risk",
+                  label: "High Supply Risk",
                   value: portfolio.high,
                   tone: portfolio.high > 0 ? "text-risk-high" : "text-ink-900",
-                  hint: "Score 60 to 84",
+                  hint: "Refill slower than usage",
                 },
                 {
-                  label: "Wards under cover",
+                  label: "Wards at Risk",
                   value: portfolio.wardsAtRisk,
                   tone: portfolio.wardsAtRisk > 0 ? "text-risk-moderate" : "text-ink-900",
-                  hint: "Below 3 days of own par demand",
+                  hint: "Below 3 days ward par",
                 },
                 {
-                  label: "Stock value at risk",
+                  label: "Value at Risk",
                   value: formatCurrency(portfolio.valueAtRisk, { compact: true }),
-                  hint: "Critical and high bands",
+                  hint: "Emergency refill value",
                 },
               ]}
             />
 
             {/* Ranked register: the same figures as a table, ordered by exposure. */}
-            <table className="w-full">
-              <caption className="sm-eyebrow px-2 py-1 text-left">Ranked exposure register</caption>
-              <thead>
-                <tr>
-                  {["#", "Molecule", "SPS", "Cover", "Lead time", "Dominant driver"].map((heading) => (
-                    <th
-                      key={heading}
-                      className="border-b border-rule bg-canvas px-2 py-1 text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-ink-500"
-                    >
-                      {heading}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {derived.assessments.slice(0, 5).map((item, index) => {
-                  const lead =
-                    item.drivers.length > 0
-                      ? item.drivers.reduce((worst, driver) => (driver.points > worst.points ? driver : worst))
-                      : null;
-                  return (
-                    <tr key={item.medicineId}>
-                      <td className="border-b border-rule-soft px-2 py-1.5 text-xs text-ink-400">{index + 1}</td>
-                      <td className="border-b border-rule-soft px-2 py-1.5">
-                        <span className="text-xs font-medium text-ink-900">{item.brandName}</span>
-                        <span className="ml-1.5 text-[10px] text-ink-400">{item.genericName}</span>
-                      </td>
-                      <td className="border-b border-rule-soft px-2 py-1.5 text-xs font-semibold text-ink-900">
-                        {item.sps.toFixed(1)}
-                      </td>
-                      <td className="border-b border-rule-soft px-2 py-1.5 text-xs text-ink-700">
-                        {formatDays(item.dir)}d
-                      </td>
-                      <td className="border-b border-rule-soft px-2 py-1.5 text-xs text-ink-500">
-                        {item.dynamicLeadTimeDays.toFixed(1)}d
-                      </td>
-                      <td className="border-b border-rule-soft px-2 py-1.5">
-                        <span className="inline-flex items-center gap-1.5 text-xs text-ink-700">
-                          <span className="h-2 w-2 shrink-0" style={{ background: RISK_TOKENS[item.tier].hex }} />
-                          {lead ? `${lead.label} · ${lead.points.toFixed(1)} pts` : "—"}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <caption className="sm-eyebrow px-2 py-1 text-left">Top Medicines At Risk of Running Out</caption>
+                <thead>
+                  <tr>
+                    {["#", "Medicine", "Risk Level", "Stock Left", "Refill Delivery", "Why It's In Danger (Plain English)"].map((heading) => (
+                      <th
+                        key={heading}
+                        className="border-b border-rule bg-canvas px-2.5 py-1.5 text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-ink-500"
+                      >
+                        {heading}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {derived.assessments.slice(0, 5).map((item, index) => {
+                    const stockGap = item.dynamicLeadTimeDays - item.dir;
+                    const stockGapText = stockGap > 0
+                      ? `⚠️ Runs out ${formatDays(stockGap)} days BEFORE supplier arrives`
+                      : "Refill arrives on schedule";
+
+                    return (
+                      <tr key={item.medicineId} className="hover:bg-canvas/50 transition">
+                        <td className="border-b border-rule-soft px-2.5 py-2 text-xs text-ink-400">{index + 1}</td>
+                        <td className="border-b border-rule-soft px-2.5 py-2">
+                          <span className="text-xs font-semibold text-ink-900">{item.brandName}</span>
+                          <span className="ml-1.5 text-[11px] text-ink-500 font-normal">({item.genericName})</span>
+                        </td>
+                        <td className="border-b border-rule-soft px-2.5 py-2">
+                          <span
+                            className={cx(
+                              "inline-block px-2 py-0.5 text-[10px] font-bold uppercase rounded-sm border",
+                              item.tier === "critical"
+                                ? "border-risk-critical/40 bg-risk-critical/[0.08] text-risk-critical"
+                                : item.tier === "high"
+                                ? "border-amber-300 bg-amber-50 text-amber-900"
+                                : "border-emerald-300 bg-emerald-50 text-emerald-900",
+                            )}
+                          >
+                            {item.tier} ({item.sps.toFixed(0)}/100)
+                          </span>
+                        </td>
+                        <td className="border-b border-rule-soft px-2.5 py-2 text-xs font-bold text-ink-900">
+                          {formatDays(item.dir)} days left
+                        </td>
+                        <td className="border-b border-rule-soft px-2.5 py-2 text-xs text-ink-600">
+                          Takes {item.dynamicLeadTimeDays.toFixed(1)} days
+                        </td>
+                        <td className="border-b border-rule-soft px-2.5 py-2">
+                          <span className={cx(
+                            "text-xs font-medium",
+                            stockGap > 0 ? "text-risk-critical" : "text-ink-600"
+                          )}>
+                            {stockGapText}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </Panel>
@@ -198,7 +218,7 @@ function ControlRoom() {
           icon={<Icon name="swap" size={18} />}
           actions={
             <span className="text-[11px] text-ink-500">
-              {derived.proposals.length} pending · up to {potentialDrop.toFixed(1)} SPS points recoverable ·{" "}
+              {derived.proposals.length} pending · up to {potentialDrop.toFixed(1)} risk points recoverable ·{" "}
               {totalStranded.toFixed(0)} units stranded
             </span>
           }
@@ -231,7 +251,7 @@ function ControlRoom() {
                     <p className="text-sm font-semibold tabular-nums text-ink-900">{proposal.quantity}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-[10px] uppercase tracking-wider text-ink-400">SPS drop</p>
+                    <p className="text-[10px] uppercase tracking-wider text-ink-400">Risk Reduction</p>
                     <p className="text-sm font-semibold tabular-nums text-risk-normal">
                       {proposal.estimatedSpsDrop > 0 ? `-${proposal.estimatedSpsDrop}` : "—"}
                     </p>
@@ -385,14 +405,14 @@ function ScenarioSandbox() {
     <div className="space-y-6">
       <Panel>
         <PanelHeader
-          title="Disruption sandbox"
-          subtitle="Re-runs the full forecast under a hypothetical shock. Live inventory is never modified; the engine clones the formulary, applies the penalties, and reports the delta."
+          title="Disruption Scenario Sandbox"
+          subtitle="Simulate how unexpected hospital disruptions impact inventory. Live stock is never modified; this runs a safe stress-test simulation."
           icon={<Icon name="sandbox" size={18} />}
         />
 
         <div className="grid gap-4 lg:grid-cols-[1fr_1.4fr]">
           <div className="space-y-3">
-            <Field label="Disruption scenario">
+            <Field label="Disruption Scenario">
               <Select
                 value={presetId}
                 onChange={setPresetId}
@@ -404,23 +424,23 @@ function ScenarioSandbox() {
             </p>
             <KeyValue
               items={[
-                { label: "Demand surge", value: `${preset.demandSurgePct > 0 ? "+" : ""}${preset.demandSurgePct}%` },
-                { label: "Lead-time slippage", value: `+${preset.leadTimeSlippageDays} days` },
-                { label: "Regional pressure", value: `+${preset.regionalPressureDelta} index` },
-                { label: "Stock write-off", value: `${preset.stockWriteOffPct}%` },
+                { label: "Patient demand surge", value: `${preset.demandSurgePct > 0 ? "+" : ""}${preset.demandSurgePct}%` },
+                { label: "Supplier delivery delay", value: `+${preset.leadTimeSlippageDays} days` },
+                { label: "Regional shortage pressure", value: `+${preset.regionalPressureDelta} index` },
+                { label: "Damaged / expired stock", value: `${preset.stockWriteOffPct}%` },
               ]}
             />
           </div>
 
           <div className="space-y-3">
             <div className="rounded-lg border border-accent/35 bg-accent-soft p-3">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-accent/90">Projected outcome</p>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-accent/90">Projected Simulation Outcome</p>
               <p className="mt-1.5 text-xs leading-relaxed text-ink-900">{result.headline}</p>
             </div>
             <div className="grid gap-3 sm:grid-cols-3">
-              <StatTile label="Critical" value={result.criticalCount} tone={result.criticalCount > 0 ? "danger" : "success"} />
-              <StatTile label="High" value={result.highCount} tone={result.highCount > 0 ? "warning" : "default"} />
-              <StatTile label="Band escalations" value={escalated.length} tone={escalated.length > 0 ? "danger" : "success"} />
+              <StatTile label="Critical Shortage (0-2d)" value={result.criticalCount} tone={result.criticalCount > 0 ? "danger" : "success"} />
+              <StatTile label="High Risk Alert (2-5d)" value={result.highCount} tone={result.highCount > 0 ? "warning" : "default"} />
+              <StatTile label="Escalated into Danger" value={escalated.length} tone={escalated.length > 0 ? "danger" : "success"} />
             </div>
           </div>
         </div>
@@ -428,11 +448,11 @@ function ScenarioSandbox() {
 
       <Panel>
         <PanelHeader
-          title="Before and after"
-          subtitle="Baseline forecast against the same formulary under the selected shock, sorted by the worst projected score."
+          title="Before &amp; After Stress-Test Impact"
+          subtitle="Current stock baseline vs projected stock levels under this disruption scenario, ranked by highest risk."
           icon={<Icon name="analytics" size={18} />}
         />
-        <DataTable head={["Molecule", "Baseline SPS", "Projected SPS", "Delta", "Cover now", "Cover after", "Band"]}>
+        <DataTable head={["Medicine", "Current Risk (0-100)", "Projected Risk", "Change", "Stock Left Now", "Stock Left After", "Risk Level"]}>
           {result.projections.map((projection) => {
             const delta = Number((projection.projectedSps - projection.baselineSps).toFixed(1));
             const token = RISK_TOKENS[projection.projectedTier];

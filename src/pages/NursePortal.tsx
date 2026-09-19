@@ -646,19 +646,19 @@ function WardStockView() {
   return (
     <div className="space-y-6">
       <div className="grid gap-3 sm:grid-cols-3">
-        <StatTile label="Molecules held" value={rows.length} hint={WARD_LABELS[ward]} />
-        <StatTile label="Below 3 days cover" value={atRisk.length} tone={atRisk.length > 0 ? "danger" : "success"} />
+        <StatTile label="Medicines Stocked" value={rows.length} hint={WARD_LABELS[ward]} />
+        <StatTile label="Under 3 Days Stock Left" value={atRisk.length} tone={atRisk.length > 0 ? "danger" : "success"} />
         <StatTile
-          label="Stranded above par"
+          label="Excess Buffer Units"
           value={rows.reduce((sum, row) => sum + Math.max(0, row.holding.quantity - row.holding.parLevel), 0)}
-          hint="Releasable by an inter-ward transfer"
+          hint="Available to transfer to wards facing shortages"
         />
       </div>
 
       <Panel>
         <PanelHeader
-          title="Ward holdings"
-          subtitle={`On-hand quantity against this ward's own par level, with the ward's share of expected demand apportioned by par.`}
+          title="Ward Stock Holdings"
+          subtitle={`Current stock in ${WARD_LABELS[ward]} vs target par level, apportioned by daily patient usage.`}
           icon={<Icon name="stock" size={18} />}
           actions={
             <div className="w-56">
@@ -674,7 +674,7 @@ function WardStockView() {
         {rows.length === 0 ? (
           <EmptyState title={`No stock held at ${WARD_LABELS[ward]}`} description="Pick another ward to inspect its holdings." />
         ) : (
-          <DataTable head={["Molecule", "On hand", "Par level", "Expected draw", "Cover", "Facility SPS", "Status"]}>
+          <DataTable head={["Medicine", "Current Stock", "Target Level", "Daily Usage", "Days Left", "Hospital Risk (0-100)", "Stock Status"]}>
             {rows.map((row) => {
               const token = row.assessment ? RISK_TOKENS[row.assessment.tier] : RISK_TOKENS.normal;
               const belowPar = row.holding.quantity < row.holding.parLevel;
@@ -715,13 +715,13 @@ function WardStockView() {
                   </td>
                   <td className="sm-td">
                     {belowPar ? (
-                      <span className="sm-chip border-risk-high/45 bg-risk-high/[0.12] text-risk-high">Below par</span>
+                      <span className="sm-chip border-risk-high/45 bg-risk-high/[0.12] text-risk-high">Below Target</span>
                     ) : row.holding.quantity > row.holding.parLevel ? (
                       <span className="sm-chip border-accent/45 bg-accent-soft text-accent">
-                        +{row.holding.quantity - row.holding.parLevel} above par
+                        +{row.holding.quantity - row.holding.parLevel} Surplus Buffer
                       </span>
                     ) : (
-                      <span className="sm-chip border-risk-normal/45 bg-risk-normal/[0.08] text-risk-normal">At par</span>
+                      <span className="sm-chip border-risk-normal/45 bg-risk-normal/[0.08] text-risk-normal">Optimal Target</span>
                     )}
                   </td>
                 </tr>
@@ -731,9 +731,8 @@ function WardStockView() {
         )}
 
         <p className="mt-4 text-[11px] leading-relaxed text-ink-400">
-          Ward par levels are the quantity this ward wants on hand before a transfer makes sense. Stock held above par is
-          counted as stranded by the shortage engine and cannot serve another ward without an inter-ward transfer, which
-          is proposed and approved from the admin control room.
+          Ward target levels are the buffer quantity this department maintains. Stock held above target is excess buffer
+          that can be transferred to relieve shortages in other hospital wards via the admin control room.
         </p>
       </Panel>
     </div>

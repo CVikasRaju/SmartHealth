@@ -37,6 +37,7 @@ import type {
   ExtractedField,
   FrequencyKey,
   Gender,
+  Hospital,
   Invoice,
   InvoiceItem,
   MedicalReport,
@@ -196,6 +197,9 @@ export interface CreateInvoiceInput {
 
 export interface AppActions {
   setRole: (role: Role) => void;
+  setHospital: (hospitalId: string) => void;
+  onboardHospital: (input: Omit<Hospital, "id" | "createdAt">) => Hospital;
+  updateHospital: (id: string, patch: Partial<Hospital>) => void;
   setView: (view: string) => void;
   setActiveStaff: (staffId: string) => void;
   setActivePatient: (patientId: string) => void;
@@ -506,6 +510,22 @@ export function AppStoreProvider({
 
     return {
       setRole: (role) => send({ type: "session/setRole", role }),
+      setHospital: (hospitalId) => send({ type: "session/setHospital", hospitalId }),
+      onboardHospital: (input) => {
+        const sequence = (db.counters.hospital ?? 0) + 1;
+        const hospital: Hospital = {
+          ...input,
+          id: `hosp-mgl-${String(sequence).padStart(3, "0")}`,
+          createdAt: new Date().toISOString(),
+        };
+        send({ type: "hospital/onboard", hospital, actor });
+        track("Could not onboard the hospital facility", api.post("/hospitals", { hospital }));
+        return hospital;
+      },
+      updateHospital: (id, patch) => {
+        send({ type: "hospital/update", id, patch, actor });
+        track("Could not update the hospital record", api.patch(`/hospitals/${id}`, patch));
+      },
       setView: (view) => send({ type: "session/setView", view }),
       setActiveStaff: (staffId) => send({ type: "session/setStaff", staffId }),
       setActivePatient: (patientId) => send({ type: "session/setPatient", patientId }),

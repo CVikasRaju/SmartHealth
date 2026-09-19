@@ -19,6 +19,7 @@ import type {
   AuditEntry,
   DatabaseState,
   FrequencyKey,
+  Hospital,
   Invoice,
   MedicalReport,
   Medicine,
@@ -130,9 +131,103 @@ function sumWardStock(wardStock: WardStock[]): number {
   return wardStock.reduce((total, holding) => total + holding.quantity, 0);
 }
 
+export const HOSPITALS: Hospital[] = [
+  {
+    id: "hosp-kmc-mgl",
+    code: "KMC-MGL-01",
+    name: "KMC Hospital Mangalore",
+    location: "Dr. B. R. Ambedkar Circle, Hampankatta",
+    city: "Mangalore",
+    state: "Karnataka",
+    tier: "tertiary",
+    bedCapacity: 500,
+    activeWards: 6,
+    status: "active",
+    contactEmail: "admin.kmc@smartmedic.io",
+    phone: "+91 824 244 4590",
+    adminId: "staff-admin-1",
+    adminName: "Meera Krishnan",
+    adminEmail: "meera.krishnan@smartmedic.io",
+    createdAt: "2025-01-15T00:00:00.000Z",
+  },
+  {
+    id: "hosp-fmmc-mgl",
+    code: "FMMC-MGL-02",
+    name: "Father Muller Medical College Hospital",
+    location: "Father Muller Road, Kankanady",
+    city: "Mangalore",
+    state: "Karnataka",
+    tier: "tertiary",
+    bedCapacity: 1250,
+    activeWards: 8,
+    status: "active",
+    contactEmail: "admin.fmmc@smartmedic.io",
+    phone: "+91 824 223 8000",
+    adminId: "staff-admin-fmmc",
+    adminName: "Dr. Antony S. D'Souza",
+    adminEmail: "admin.fmmc@smartmedic.io",
+    createdAt: "2025-02-01T00:00:00.000Z",
+  },
+  {
+    id: "hosp-ajh-mgl",
+    code: "AJH-MGL-03",
+    name: "A.J. Hospital & Research Centre",
+    location: "NH 66, Kuntikan",
+    city: "Mangalore",
+    state: "Karnataka",
+    tier: "tertiary",
+    bedCapacity: 650,
+    activeWards: 7,
+    status: "active",
+    contactEmail: "admin.ajh@smartmedic.io",
+    phone: "+91 824 222 5555",
+    adminId: "staff-admin-ajh",
+    adminName: "Dr. Prashanth Marla",
+    adminEmail: "admin.ajh@smartmedic.io",
+    createdAt: "2025-03-10T00:00:00.000Z",
+  },
+  {
+    id: "hosp-ysh-mgl",
+    code: "YSH-MGL-04",
+    name: "Yenepoya Specialty Hospital",
+    location: "Kodiabail",
+    city: "Mangalore",
+    state: "Karnataka",
+    tier: "secondary",
+    bedCapacity: 350,
+    activeWards: 5,
+    status: "active",
+    contactEmail: "admin.ysh@smartmedic.io",
+    phone: "+91 824 423 8855",
+    adminId: "staff-admin-ysh",
+    adminName: "Dr. Farhaad Yenepoya",
+    adminEmail: "admin.ysh@smartmedic.io",
+    createdAt: "2025-04-12T00:00:00.000Z",
+  },
+  {
+    id: "hosp-wdh-mgl",
+    code: "WDH-MGL-05",
+    name: "Wenlock District Government Hospital",
+    location: "Opposite D.C. Office, Hampankatta",
+    city: "Mangalore",
+    state: "Karnataka",
+    tier: "district",
+    bedCapacity: 750,
+    activeWards: 6,
+    status: "active",
+    contactEmail: "admin.wenlock@smartmedic.io",
+    phone: "+91 824 242 4310",
+    adminId: "staff-admin-wdh",
+    adminName: "Dr. Sadashiva Shanbhogue",
+    adminEmail: "admin.wenlock@smartmedic.io",
+    createdAt: "2025-05-01T00:00:00.000Z",
+  },
+];
+
 const STAFF: StaffMember[] = [
   {
     id: "staff-admin-1",
+    hospitalId: "hosp-kmc-mgl",
     employeeId: "EMP-1001",
     fullName: "Meera Krishnan",
     role: "admin",
@@ -144,6 +239,7 @@ const STAFF: StaffMember[] = [
   },
   {
     id: "staff-doctor-1",
+    hospitalId: "hosp-kmc-mgl",
     employeeId: "EMP-2001",
     fullName: "Dr. Ramesh Sharma",
     role: "doctor",
@@ -155,6 +251,7 @@ const STAFF: StaffMember[] = [
   },
   {
     id: "staff-doctor-2",
+    hospitalId: "hosp-kmc-mgl",
     employeeId: "EMP-2002",
     fullName: "Dr. Nandita Rao",
     role: "doctor",
@@ -166,6 +263,7 @@ const STAFF: StaffMember[] = [
   },
   {
     id: "staff-nurse-1",
+    hospitalId: "hosp-kmc-mgl",
     employeeId: "EMP-3001",
     fullName: "Sister Fatima Sheikh",
     role: "nurse",
@@ -177,6 +275,7 @@ const STAFF: StaffMember[] = [
   },
   {
     id: "staff-nurse-2",
+    hospitalId: "hosp-kmc-mgl",
     employeeId: "EMP-3002",
     fullName: "Joseph Thomas",
     role: "nurse",
@@ -188,6 +287,7 @@ const STAFF: StaffMember[] = [
   },
   {
     id: "staff-reception-1",
+    hospitalId: "hosp-kmc-mgl",
     employeeId: "EMP-4001",
     fullName: "Kavya Nair",
     role: "receptionist",
@@ -199,6 +299,7 @@ const STAFF: StaffMember[] = [
   },
   {
     id: "staff-cashier-1",
+    hospitalId: "hosp-kmc-mgl",
     employeeId: "EMP-5001",
     fullName: "Arjun Deshpande",
     role: "cashier",
@@ -1501,6 +1602,7 @@ export function createSeedDatabase(): DatabaseState {
   const administrations = buildAdministrations(treatments, medicines);
 
   return {
+    hospitals: HOSPITALS.map((h) => ({ ...h })),
     staff: STAFF.map((member) => ({ ...member })),
     patients: createSeedPatients(),
     medicines,
@@ -1516,6 +1618,7 @@ export function createSeedDatabase(): DatabaseState {
     alerts: [],
     auditLog: buildAuditLog(),
     counters: {
+      hospital: HOSPITALS.length,
       patient: PATIENTS.length,
       appointment: APPOINTMENTS.length,
       treatment: TREATMENTS.length,
@@ -1534,7 +1637,7 @@ export function createSeedDatabase(): DatabaseState {
 export function createInitialAppState(): AppState {
   return {
     db: createSeedDatabase(),
-    session: { role: "admin", staffId: "staff-admin-1", patientId: "patient-2" },
+    session: { role: "admin", hospitalId: "hosp-kmc-mgl", staffId: "staff-admin-1", patientId: "patient-2" },
     activeView: "admin.control-room",
   };
 }

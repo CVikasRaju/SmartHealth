@@ -11,11 +11,31 @@
 /* Shared primitives                                                   */
 /* ------------------------------------------------------------------ */
 
-/** Portal identities. `patient` is a distinct, restricted portal identity. */
-export type Role = "admin" | "doctor" | "nurse" | "receptionist" | "cashier" | "patient";
+/** Portal identities. `superadmin` is the platform/network governance role. `patient` is a distinct, restricted portal identity. */
+export type Role = "superadmin" | "admin" | "doctor" | "nurse" | "receptionist" | "cashier" | "patient";
 
-/** Staff identities only, i.e. every role that is not the patient portal. */
-export type StaffRole = Exclude<Role, "patient">;
+/** Staff identities only, i.e. every role that is not the patient portal or superadmin. */
+export type StaffRole = Exclude<Role, "patient" | "superadmin">;
+
+/** Multi-tenant hospital institution. */
+export interface Hospital {
+  id: string;
+  code: string;
+  name: string;
+  location: string;
+  city: string;
+  state: string;
+  tier: "tertiary" | "secondary" | "primary" | "district";
+  bedCapacity: number;
+  activeWards: number;
+  status: "active" | "provisioning" | "suspended";
+  contactEmail: string;
+  phone: string;
+  adminId?: string;
+  adminName?: string;
+  adminEmail?: string;
+  createdAt: string;
+}
 
 /** Risk banding produced by the shortage engine's SPS score. */
 export type RiskTier = "critical" | "high" | "moderate" | "normal";
@@ -55,6 +75,7 @@ export const ALL_WARDS: WardId[] = [
 
 export interface StaffMember {
   id: string;
+  hospitalId?: string;
   employeeId: string;
   fullName: string;
   role: StaffRole;
@@ -111,6 +132,7 @@ export interface WardStock {
 
 export interface Medicine {
   id: string;
+  hospitalId?: string;
   sku: string;
   brandName: string;
   genericName: string;
@@ -296,6 +318,7 @@ export interface Admission {
 
 export interface Patient {
   id: string;
+  hospitalId?: string;
   mrn: string;
   name: string;
   dob: string;
@@ -324,6 +347,7 @@ export type AppointmentStatus =
 
 export interface Appointment {
   id: string;
+  hospitalId?: string;
   patientId: string;
   doctorId: string;
   department: string;
@@ -385,6 +409,7 @@ export interface PrescriptionLine {
 
 export interface Treatment {
   id: string;
+  hospitalId?: string;
   patientId: string;
   doctorId: string;
   diagnosis: string;
@@ -472,6 +497,7 @@ export type PaymentStatus = "unpaid" | "partially_paid" | "paid" | "refunded";
 
 export interface Invoice {
   id: string;
+  hospitalId?: string;
   invoiceNumber: string;
   patientId: string;
   cashierId: string;
@@ -574,6 +600,7 @@ export const REPORT_CATEGORY_LABELS: Record<ReportCategory, string> = {
 
 export interface MedicalReport {
   id: string;
+  hospitalId?: string;
   patientId: string;
   uploadedBy: string;
   uploadedByRole: Role;
@@ -636,6 +663,7 @@ export interface AuditEntry {
 /* ------------------------------------------------------------------ */
 
 export interface DatabaseState {
+  hospitals: Hospital[];
   staff: StaffMember[];
   patients: Patient[];
   medicines: Medicine[];
@@ -657,6 +685,8 @@ export type CollectionKey = Exclude<keyof DatabaseState, "counters">;
 
 export interface SessionState {
   role: Role;
+  /** Active hospital ID for multi-tenant context. */
+  hospitalId?: string;
   /** Active staff member for staff roles. */
   staffId: string;
   /** Active patient for the patient portal. */

@@ -650,48 +650,48 @@ function CpoeConsole() {
                   <div className="mt-3 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-center">
                     <div>
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-[11px] text-ink-500">Live stock guard</span>
+                        <span className="text-[11px] text-ink-500">Live Stock Guard</span>
                         <Chip token={RISK_TOKENS[assessment.tier]} />
                         {outOfStock ? (
-                          <span className="sm-chip border-risk-critical/45 bg-risk-critical/[0.12] text-risk-critical">Stocked out</span>
+                          <span className="sm-chip border-risk-critical/45 bg-risk-critical/[0.12] text-risk-critical">Out of Stock</span>
                         ) : criticalCover ? (
                           <span className="sm-chip border-risk-high/45 bg-risk-high/[0.12] text-risk-high">
-                            Under 3 days cover
+                            Under 3 days stock left
                           </span>
                         ) : null}
                       </div>
                       <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-[11px] text-ink-500">
                         <span>
-                          Cover{" "}
+                          Stock Left:{" "}
                           <span className={cx("font-semibold tabular-nums", flagging ? "text-risk-high" : "text-ink-900")}>
                             {formatDays(assessment.dir)} days
                           </span>
                         </span>
                         <span>
-                          Available <span className="tabular-nums text-ink-900">{assessment.availableStock}</span>{" "}
+                          Available: <span className="tabular-nums text-ink-900">{assessment.availableStock}</span>{" "}
                           {medicine.unit}
                         </span>
                         <span>
-                          SPS <span className="tabular-nums text-ink-900">{assessment.sps}</span>
+                          Risk Score: <span className="tabular-nums text-ink-900">{assessment.sps}/100</span>
                         </span>
                         <span>
-                          Dispensing <span className="tabular-nums text-ink-900">{computeQuantity(medicine, line.frequency, line.durationDays)}</span>{" "}
+                          This Rx: <span className="tabular-nums text-ink-900">{computeQuantity(medicine, line.frequency, line.durationDays)}</span>{" "}
                           {medicine.unit}
                         </span>
                       </div>
                       {!criticalCover && !flagging ? (
                         <p className="mt-2 text-[11px] text-risk-normal">
-                          Cover is adequate for this course; no substitution required.
+                          Hospital stock is healthy for this course; safe to prescribe.
                         </p>
                       ) : (
                         <p className="mt-2 text-[11px] leading-relaxed text-risk-high">
-                          This course consumes{" "}
+                          This prescription consumes{" "}
                           {(
                             (computeQuantity(medicine, line.frequency, line.durationDays) /
                               Math.max(assessment.availableStock, 1)) *
                             100
                           ).toFixed(1)}
-                          % of the effective available stock. {assessment.recommendation}
+                          % of remaining hospital stock. {assessment.recommendation}
                         </p>
                       )}
                     </div>
@@ -721,7 +721,7 @@ function CpoeConsole() {
                               <span className="text-ink-400">· {entry.medicine.genericName}</span>
                             </span>
                             <span className="block text-[10px] text-ink-500">
-                              {formatDays(entry.assessment.dir)} days cover · SPS {entry.assessment.sps} ·{" "}
+                              {formatDays(entry.assessment.dir)} days stock left · Risk Score {entry.assessment.sps}/100 ·{" "}
                               {entry.assessment.availableStock} {entry.medicine.unit} available
                             </span>
                           </span>

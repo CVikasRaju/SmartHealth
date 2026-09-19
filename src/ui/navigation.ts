@@ -17,6 +17,32 @@ export interface NavItem {
 }
 
 export const NAV_BY_ROLE: Record<Role, NavItem[]> = {
+  superadmin: [
+    {
+      id: "superadmin.hospitals",
+      label: "Hospital Network",
+      icon: "governance",
+      description: "Onboard hospital facilities, manage bed capacities, and license status.",
+    },
+    {
+      id: "superadmin.admins",
+      label: "Hospital Admins",
+      icon: "queue",
+      description: "Provision and assign Hospital Administrators to facility branches.",
+    },
+    {
+      id: "superadmin.telemetry",
+      label: "Regional Shortage Network",
+      icon: "shortage",
+      description: "Cross-hospital drug stockout risk heat map and emergency transfer corridors.",
+    },
+    {
+      id: "superadmin.audit",
+      label: "Platform Audit Trail",
+      icon: "analytics",
+      description: "Platform-level security, tenant onboarding, and governance ledger.",
+    },
+  ],
   admin: [
     {
       id: "admin.control-room",
@@ -147,6 +173,7 @@ export const NAV_BY_ROLE: Record<Role, NavItem[]> = {
 
 /** Landing view for each role. */
 export const HOME_VIEW: Record<Role, string> = {
+  superadmin: "superadmin.hospitals",
   admin: "admin.control-room",
   doctor: "doctor.queue",
   nurse: "nurse.emar",
@@ -157,6 +184,7 @@ export const HOME_VIEW: Record<Role, string> = {
 
 /** Default staff member and patient for each role, used when switching roles. */
 export const ROLE_DEFAULTS: Record<Role, { staffId: string; patientId: string }> = {
+  superadmin: { staffId: "staff-admin-1", patientId: "patient-2" },
   admin: { staffId: "staff-admin-1", patientId: "patient-2" },
   doctor: { staffId: "staff-doctor-1", patientId: "patient-2" },
   nurse: { staffId: "staff-nurse-1", patientId: "patient-1" },

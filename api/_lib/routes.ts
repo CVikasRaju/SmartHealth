@@ -25,6 +25,9 @@ const ROUTES: RouteDefinition[] = [
   { method: "GET", pattern: "/demo/profiles", handler: services.handleDemoProfiles },
   { method: "POST", pattern: "/demo/reset", handler: services.handleResetDemo },
 
+  { method: "POST", pattern: "/hospitals", handler: services.handleCreateHospital },
+  { method: "PATCH", pattern: "/hospitals/:id", handler: services.handlePatchHospital },
+
   { method: "POST", pattern: "/patients", handler: services.handleRegisterPatient },
   { method: "PATCH", pattern: "/patients/:id", handler: services.handlePatchPatient },
 

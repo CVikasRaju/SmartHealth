@@ -22,6 +22,32 @@ export interface ApiConfig {
   isProduction: boolean;
 }
 
+import { readFileSync, existsSync } from "node:fs";
+import { resolve } from "node:path";
+
+function loadEnvFile(): void {
+  try {
+    const envPath = resolve(process.cwd(), ".env");
+    if (existsSync(envPath)) {
+      const content = readFileSync(envPath, "utf-8");
+      for (const line of content.split(/\r?\n/)) {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed.startsWith("#")) continue;
+        const eqIdx = trimmed.indexOf("=");
+        if (eqIdx !== -1) {
+          const key = trimmed.slice(0, eqIdx).trim();
+          const val = trimmed.slice(eqIdx + 1).trim().replace(/^['"](.*)['"]$/, "$1");
+          if (key && !process.env[key]) {
+            process.env[key] = val;
+          }
+        }
+      }
+    }
+  } catch {
+    // Ignore in restricted or production environments
+  }
+}
+
 /** Treat empty strings from `.env` files as absent. */
 function readEnv(...names: string[]): string | null {
   for (const name of names) {
@@ -43,6 +69,7 @@ export function isProductionRuntime(): boolean {
  * deploy from silently falling back to seeded data.
  */
 export function readConfig(): ApiConfig {
+  loadEnvFile();
   const supabaseUrl = readEnv("SUPABASE_URL", "VITE_SUPABASE_URL");
   const supabaseAnonKey = readEnv("SUPABASE_ANON_KEY", "VITE_SUPABASE_ANON_KEY");
   const supabaseServiceRoleKey = readEnv("SUPABASE_SERVICE_ROLE_KEY");
