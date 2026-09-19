@@ -1,21 +1,42 @@
 /**
  * Start the API and the Vite dev server together.
  *
- * Two processes, one terminal, no extra dependency. Output from both is
- * prefixed so it is obvious which one is talking. Ctrl+C stops both.
+ * Two processes, one terminal, no extra dependency. The CLIs are launched
+ * through the current Node binary rather than through a shell shim, because
+ * spawning `npx.cmd` on Windows throws EINVAL under Node 20+.
+ *
+ * Ctrl+C stops both.
  */
 
 import { spawn } from "node:child_process";
+import { existsSync } from "node:fs";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const npx = process.platform === "win32" ? "npx.cmd" : "npx";
+const root = fileURLToPath(new URL("..", import.meta.url));
+
+/** Resolve a CLI shipped with a dependency, preferring the local install. */
+function cliPath(...candidates) {
+  for (const candidate of candidates) {
+    const absolute = join(root, ...candidate);
+    if (existsSync(absolute)) return absolute;
+  }
+  throw new Error(`None of these were found: ${candidates.map((parts) => parts.join("/")).join(", ")}`);
+}
+
+const tsx = cliPath(["node_modules", "tsx", "dist", "cli.mjs"]);
+const vite = cliPath(["node_modules", "vite", "bin", "vite.js"]);
 
 const processes = [
-  { name: "api", command: npx, args: ["tsx", "watch", "server/dev.ts"], colour: "\u001b[36m" },
-  { name: "web", command: npx, args: ["vite"], colour: "\u001b[35m" },
+  { name: "api", script: tsx, args: ["watch", "server/dev.ts"], colour: "\u001b[36m" },
+  { name: "web", script: vite, args: [], colour: "\u001b[35m" },
 ];
 
-const running = processes.map(({ name, command, args, colour }) => {
-  const child = spawn(command, args, { stdio: ["ignore", "pipe", "pipe"], shell: false });
+const running = processes.map(({ name, script, args, colour }) => {
+  const child = spawn(process.execPath, [script, ...args], {
+    cwd: root,
+    stdio: ["ignore", "pipe", "pipe"],
+  });
 
   const prefix = `${colour}[${name}]\u001b[0m`;
   const relay = (stream, target) => {
@@ -31,6 +52,10 @@ const running = processes.map(({ name, command, args, colour }) => {
 
   relay(child.stdout, process.stdout);
   relay(child.stderr, process.stderr);
+
+  child.on("error", (error) => {
+    process.stdout.write(`${prefix} could not start: ${error.message}\n`);
+  });
 
   child.on("exit", (code) => {
     process.stdout.write(`${prefix} exited with code ${code ?? 0}\n`);

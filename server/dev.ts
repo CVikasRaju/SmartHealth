@@ -64,6 +64,18 @@ async function main(): Promise<void> {
     })();
   });
 
+  server.on("error", (error: NodeJS.ErrnoException) => {
+    if (error.code === "EADDRINUSE") {
+      console.error(
+        `\n  Port ${port} is already in use. Another \`npm run dev:api\` is probably still running.\n` +
+          "  Stop it, or start this one on a different port:  PORT=8888 npm run dev:api\n",
+      );
+    } else {
+      console.error(`\n  The development server could not start: ${error.message}\n`);
+    }
+    process.exitCode = 1;
+  });
+
   server.listen(port, () => {
     console.log("");
     console.log(`  SmartMedic API  http://127.0.0.1:${port}`);

@@ -259,10 +259,11 @@ export async function handleCreateAppointment(ctx: RequestContext): Promise<Rout
   const appointment = asRecord(body.appointment, "appointment");
   const patientId = requireString(appointment, "patientId");
 
+  // Scheduling is a front-desk function; a patient may book for themselves only.
   if (ctx.actor.role === "patient") {
     requirePatientScope(ctx, patientId);
   } else {
-    requireRole(ctx, ["admin", "receptionist", "doctor", "nurse"]);
+    requireRole(ctx, ["admin", "receptionist"]);
   }
 
   await ctx.repo.insert("appointments", appointment);
@@ -280,7 +281,9 @@ export async function handleCreateAppointment(ctx: RequestContext): Promise<Rout
 }
 
 export async function handlePatchAppointment(ctx: RequestContext): Promise<RouteResult> {
-  requireRole(ctx, ["admin", "receptionist", "doctor", "nurse"]);
+  // Reception triages and checks in; the clinician moves the patient through the
+  // consultation itself.
+  requireRole(ctx, ["admin", "receptionist", "doctor"]);
   const appointmentId = ctx.params.id;
   const body = readBody(ctx);
 
