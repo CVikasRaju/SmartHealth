@@ -21,7 +21,7 @@ function clone<T>(value: T): T {
  * Synthesise an authorisation profile per seeded identity. In demo mode these
  * stand in for Supabase auth users, and the login screen offers them directly.
  */
-function deriveProfiles(db: DatabaseState): ProfileRecord[] {
+export function deriveProfiles(db: DatabaseState): ProfileRecord[] {
   const staff: ProfileRecord[] = db.staff.map((member: StaffMember) => ({
     id: `demo-${member.id}`,
     email: member.email,

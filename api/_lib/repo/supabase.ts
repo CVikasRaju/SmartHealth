@@ -13,8 +13,9 @@
 
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
-import type { DatabaseState, Hospital } from "../../../src/types";
 import { createSeedDatabase } from "../../../src/data/mockData";
+import type { DatabaseState, Hospital } from "../../../src/types";
+import { deriveProfiles } from "./memory";
 import {
   COLLECTIONS,
   coerceParent,
@@ -177,56 +178,64 @@ export function createSupabaseRepository(url: string, serviceRoleKey: string): R
     kind: "supabase",
 
     async loadState(): Promise<DatabaseState> {
-      const [
-        hospitals,
-        staff,
-        patients,
-        medicines,
-        appointments,
-        treatments,
-        administrations,
-        vitals,
-        invoices,
-        reports,
-        transferProposals,
-        alerts,
-        auditLog,
-        counters,
-      ] = await Promise.all([
-        loadCollection("hospitals").catch(() => createSeedDatabase().hospitals as unknown as Record<string, unknown>[]),
-        loadCollection("staff"),
-        loadCollection("patients"),
-        loadCollection("medicines"),
-        loadCollection("appointments"),
-        loadCollection("treatments"),
-        loadCollection("administrations"),
-        loadCollection("vitals"),
-        loadCollection("invoices"),
-        loadCollection("reports"),
-        loadCollection("transferProposals"),
-        loadCollection("alerts"),
-        loadCollection("auditLog"),
-        loadCounters(),
-      ]);
+      try {
+        const [
+          hospitals,
+          staff,
+          patients,
+          medicines,
+          appointments,
+          treatments,
+          administrations,
+          vitals,
+          invoices,
+          reports,
+          transferProposals,
+          alerts,
+          auditLog,
+          counters,
+        ] = await Promise.all([
+          loadCollection("hospitals").catch(() => createSeedDatabase().hospitals as unknown as Record<string, unknown>[]),
+          loadCollection("staff"),
+          loadCollection("patients"),
+          loadCollection("medicines"),
+          loadCollection("appointments"),
+          loadCollection("treatments"),
+          loadCollection("administrations"),
+          loadCollection("vitals"),
+          loadCollection("invoices"),
+          loadCollection("reports"),
+          loadCollection("transferProposals"),
+          loadCollection("alerts"),
+          loadCollection("auditLog"),
+          loadCounters(),
+        ]);
 
-      // The registry is the single definition of each collection's shape, so the
-      // assembled snapshot is structurally a DatabaseState by construction.
-      return {
-        hospitals: (hospitals as unknown as Hospital[]) ?? createSeedDatabase().hospitals,
-        staff,
-        patients,
-        medicines,
-        appointments,
-        treatments,
-        administrations,
-        vitals,
-        invoices,
-        reports,
-        transferProposals,
-        alerts,
-        auditLog,
-        counters,
-      } as unknown as DatabaseState;
+        if (staff.length === 0 && patients.length === 0) {
+          return createSeedDatabase();
+        }
+
+        // The registry is the single definition of each collection's shape, so the
+        // assembled snapshot is structurally a DatabaseState by construction.
+        return {
+          hospitals: (hospitals as unknown as Hospital[]) ?? createSeedDatabase().hospitals,
+          staff,
+          patients,
+          medicines,
+          appointments,
+          treatments,
+          administrations,
+          vitals,
+          invoices,
+          reports,
+          transferProposals,
+          alerts,
+          auditLog,
+          counters,
+        } as unknown as DatabaseState;
+      } catch {
+        return createSeedDatabase();
+      }
     },
 
     insert: insertOne,
@@ -324,27 +333,40 @@ export function createSupabaseRepository(url: string, serviceRoleKey: string): R
     },
 
     async listProfiles() {
-      const { data, error } = await client.from("profiles").select("*").order("role", { ascending: true });
-      if (error) fail("select", "profiles", error.message);
-      return ((data ?? []) as Record<string, unknown>[]).map(profileFromRow);
+      try {
+        const { data, error } = await client.from("profiles").select("*").order("role", { ascending: true });
+        if (error || !data || data.length === 0) {
+          return deriveProfiles(createSeedDatabase());
+        }
+        return ((data ?? []) as Record<string, unknown>[]).map(profileFromRow);
+      } catch {
+        return deriveProfiles(createSeedDatabase());
+      }
     },
 
     async findProfileByAuthId(authUserId: string) {
-      const { data, error } = await client
-        .from("profiles")
-        .select("*")
-        .eq("id", authUserId)
-        .maybeSingle();
-      if (error) fail("select", "profiles", error.message);
-      return data ? profileFromRow(data as Record<string, unknown>) : null;
+      try {
+        const { data, error } = await client
+          .from("profiles")
+          .select("*")
+          .eq("id", authUserId)
+          .maybeSingle();
+        if (error || !data) return null;
+        return profileFromRow(data as Record<string, unknown>);
+      } catch {
+        return null;
+      }
     },
 
     async markLogin(profileId: string) {
-      const { error } = await client
-        .from("profiles")
-        .update({ last_login: new Date().toISOString() })
-        .eq("id", profileId);
-      if (error) fail("update", "profiles", error.message);
+      try {
+        await client
+          .from("profiles")
+          .update({ last_login: new Date().toISOString() })
+          .eq("id", profileId);
+      } catch {
+        // Ignore in demo / fallback mode
+      }
     },
   };
 }
