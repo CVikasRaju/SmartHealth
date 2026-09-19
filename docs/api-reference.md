@@ -1,209 +1,228 @@
 # API Reference
 
-Base URL: `https://api.smartmedic.io/v1`[cite: 16]
+Base URL: `/api` on the deployed origin. Locally, `npm run dev:api` serves the same surface on
+`http://localhost:8787`, and Vite proxies `/api` to it.
 
-All requests require `Authorization: Bearer <token>` unless explicitly marked **Public**[cite: 16].
+The whole surface is one serverless function, `api/[...path].ts`, dispatched by the route table in
+`api/_lib/routes.ts`.
 
----
+## Authentication
 
-## 1. Authentication
+Every endpoint except `GET /api/health` requires a Supabase access token:
 
-### POST `/auth/login`
-**Public**[cite: 16]
+```
+Authorization: Bearer <access token>
+```
 
-**Request:**
+The token is verified against the Supabase Auth server — not merely decoded — and then resolved to a
+`profiles` row, which is what carries the role. A valid Supabase user with no profile is rejected with
+`403 no_profile`; holding a credential is not the same as holding a role.
+
+When the API runs without Supabase configuration (local development), authentication is replaced by an
+identity header and no password is checked:
+
+```
+x-smartmedic-actor: demo-staff-nurse-1
+```
+
+This header is ignored in Supabase mode. The API refuses to start in production without either
+Supabase credentials or an explicit `SMARTMEDIC_DEMO_MODE=1`.
+
+## Response envelope
+
+```json
+{ "success": true, "data": { } }
+```
+
 ```json
 {
-  "email": "dr.sharma@smartmedic.io",
-  "password": "••••••••"
+  "success": false,
+  "error": { "code": "forbidden", "message": "…", "requestId": "…" }
 }
 ```
 
-**Response (200 OK):**
+### Error codes
+
+| HTTP | Code | Meaning |
+|--:|---|---|
+| 400 | `invalid_body` | a field is missing, or of the wrong type |
+| 400 | `unknown_medicine` | a prescription references a formulary id that does not exist |
+| 400 | `invalid_amount` | a payment resolved to zero |
+| 401 | `missing_token` / `invalid_token` | no bearer token, or one that failed verification |
+| 403 | `forbidden` | the authenticated role may not perform this action |
+| 403 | `no_profile` / `inactive_profile` | authenticated, but not provisioned or deactivated |
+| 404 | `not_found` | no such route, or no such record |
+| 405 | `method_not_allowed` | the path exists but not for this verb |
+| 409 | `duplicate_id` | the client-generated identifier already exists — the client re-bootstraps |
+| 503 | `not_configured` | the deployment is missing environment variables |
+| 500 | `internal_error` | unhandled failure; the message is logged server-side |
+
+## Mutation responses
+
+Every mutating endpoint answers with the rows the server actually committed, for the client to merge
+into its optimistic state:
+
 ```json
 {
   "success": true,
   "data": {
-    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-    "user": {
-      "id": "64a1b2c3d4e5f001",
-      "fullName": "Dr. Ramesh Sharma",
-      "role": "doctor",
-      "department": "Cardiology"
+    "applied": {
+      "collections": { "medicines": [{ "id": "med-aug-625", "currentStock": 136 }] },
+      "counters": { "audit": 7, "treatment": 4 }
     }
   }
 }
 ```
 
+Audit rows are not echoed back: the server writes the ledger with the identity it authenticated, and
+the client adopts it on the next load.
+
 ---
 
-## 2. Medical Report Simplifier
+## Reads
 
-### POST `/reports/upload`
-Uploads a diagnostic report document (PDF, JPG, PNG) and initiates asynchronous OCR extraction[cite: 11, 16].  
-**Access**: `admin`, `doctor`, `nurse`, `receptionist`, `patient`  
-**Content-Type**: `multipart/form-data`
+### `GET /health`
+Public. Reports the mode and the role the caller resolved to, so a misconfigured deployment is
+obvious without signing in.
 
-**Form Payload:**
-- `file`: Binary file data (Max: 15MB)
-- `patientId`: `"64a1b2c3d4e5f888"`[cite: 16]
-- `reportCategory`: `"blood_panel" | "renal_panel" | "lipid_profile" | "urinalysis" | "general"`
+```json
+{ "status": "ok", "mode": "supabase", "actorRole": "admin" }
+```
 
-**Response (202 Accepted):**
+### `GET /bootstrap`
+Any authenticated role. Returns the caller's profile and the hospital record, **filtered by role**:
+
 ```json
 {
-  "success": true,
-  "jobId": "ocr-job-88192",
-  "message": "Report uploaded successfully. Processing extraction pipeline.",
-  "reportId": "64f9b2c3d4e5f999"
+  "profile": { "id": "…", "fullName": "Meera Krishnan", "role": "admin", "staffId": "staff-admin-1" },
+  "db": {
+    "staff": [], "patients": [], "medicines": [], "appointments": [], "treatments": [],
+    "administrations": [], "vitals": [], "invoices": [], "reports": [],
+    "transferProposals": [], "alerts": [], "auditLog": [], "counters": {}
+  },
+  "mode": "supabase"
 }
 ```
 
-### GET `/reports/:id`
-Retrieves the parsed, plain-language structured explanation of a specific medical report[cite: 16].  
-**Access**: `admin`, `doctor`, `nurse`, `patient`
+Staff receive the whole hospital record. A `patient` profile receives only its own patient row,
+appointments, treatments, administrations, vitals, invoices and reports, plus the consultant
+directory with contact details removed. The formulary, supply position, other patients, the alert
+list and the audit ledger are omitted entirely, because they are not the patient's to see.
 
-**Response (200 OK):**
+### `GET /demo/profiles`
+Demo mode only. Lists the seeded identities so the offline sign-in screen can offer them.
+
+---
+
+## Clinical and front desk
+
+| Method | Path | Roles | Notes |
+|---|---|---|---|
+| `POST` | `/patients` | admin, receptionist, doctor, nurse | registers a patient; body `{ patient }` |
+| `PATCH` | `/patients/:id` | admin, doctor, nurse, receptionist | condition resolve/reactivate: body `{ condition, action }` |
+| `POST` | `/appointments` | admin, receptionist, doctor, nurse, patient (self only) | body `{ appointment }` |
+| `PATCH` | `/appointments/:id` | admin, receptionist, doctor, nurse | status, queue position, triage or reassignment |
+| `POST` | `/treatments` | doctor, admin | consultation plus prescription; **dispenses stock server-side** |
+| `PATCH` | `/administrations/:id` | nurse, doctor, admin | body `{ status, vitalsId, notes }`; `administeredBy` comes from the session, never the payload |
+| `POST` | `/vitals` | nurse, doctor, admin | body `{ vitals }`; `recordedBy` and `recordedAt` are stamped by the server |
+
+### Dispensing is authoritative
+
+`POST /treatments` does not accept a new stock figure. It reads each prescribed medicine from the
+database, applies the same `dispenseStock` the browser uses, writes the result, and returns the row it
+committed:
+
 ```json
 {
-  "success": true,
-  "data": {
-    "reportId": "64f9b2c3d4e5f999",
-    "patientId": "64a1b2c3d4e5f888",
-    "reportDate": "2026-09-18T10:30:00Z",
-    "status": "completed",
-    "extractedFields": [
-      {
-        "testName": "Fasting Blood Sugar (FBS)",
-        "value": 142,
-        "unit": "mg/dL",
-        "referenceRange": { "min": 70, "max": 99 },
-        "status": "elevated",
-        "plainLanguageExplanation": "Measures the glucose level in your blood after fasting. Higher values can indicate that your body is having trouble processing sugars effectively."
-      },
-      {
-        "testName": "Hemoglobin A1c (HbA1c)",
-        "value": 6.8,
-        "unit": "%",
-        "referenceRange": { "min": 4.0, "max": 5.6 },
-        "status": "elevated",
-        "plainLanguageExplanation": "Reflects your average blood sugar levels over the past 2 to 3 months. Values above 6.5% are typically flagged for physician review regarding sugar management."
-      }
-    ],
-    "medicalDisclaimer": "This summary is generated by SmartMedic AI to explain clinical terms in simple language. It does NOT provide a medical diagnosis, clinical judgment, or treatment prescription. Always consult your attending doctor for medical decisions."
-  }
-}
-```
-
-### GET `/reports/patient/:patientId/trends`
-Provides longitudinal historical values for specific biomarkers across repeated tests[cite: 16].  
-**Access**: `admin`, `doctor`, `nurse`, `patient`  
-**Query Params**: `biomarkers=HbA1c,Creatinine`
-
-**Response (200 OK):**
-```json
-{
-  "success": true,
-  "data": {
-    "patientId": "64a1b2c3d4e5f888",
-    "trendSeries": [
-      {
-        "biomarker": "Hemoglobin A1c (HbA1c)",
-        "unit": "%",
-        "referenceRange": { "min": 4.0, "max": 5.6 },
-        "history": [
-          { "date": "2025-09-10T09:00:00Z", "value": 7.4 },
-          { "date": "2026-03-12T08:30:00Z", "value": 7.1 },
-          { "date": "2026-09-18T10:30:00Z", "value": 6.8 }
-        ]
-      }
+  "treatment": {
+    "id": "treat-0004",
+    "patientId": "patient-1",
+    "doctorId": "staff-doctor-1",
+    "diagnosis": "Acute bacterial sinusitis",
+    "icd10Code": "J01.90",
+    "linkedReportIds": [],
+    "notes": "",
+    "createdAt": "2026-09-19T10:00:00.000Z",
+    "prescriptions": [
+      { "id": "rx-0004-1", "medicineId": "med-aug-625", "drugName": "Augmentin 625 Duo",
+        "dosage": "625mg", "frequency": "twice_daily", "durationDays": 5, "quantity": 20,
+        "route": "oral", "instructions": "After food", "substituteFor": null,
+        "dispenseStatus": "dispensed", "stockAdvisory": null }
     ]
   }
 }
 ```
 
+Two clinicians prescribing at the same time cannot both subtract from the same stale number, and stock
+clamps at zero rather than going negative.
+
 ---
 
-## 3. Patients & Operations
+## Billing
 
-### GET `/patients`
-Returns a paginated list of registered patients[cite: 16].  
-**Access**: All authenticated staff[cite: 16, 17]  
-**Query Params**: `page`, `limit`, `search`[cite: 16]
+| Method | Path | Roles | Notes |
+|---|---|---|---|
+| `POST` | `/invoices` | cashier, admin | body `{ invoice }` with its line items |
+| `POST` | `/invoices/:id/payments` | cashier, admin | body `{ paymentMethod, amount, reference }` |
 
-### POST `/patients`
-Registers a new patient record[cite: 16].  
-**Access**: `admin`, `receptionist`, `doctor`, `nurse`[cite: 17]
+A payment is added to the invoice's transaction ledger and the status is recomputed from that ledger,
+so part payments, over-collection and settlement are consistent by construction. Over-collection is
+clamped to the outstanding balance; a request that resolves to zero is rejected.
 
-**Request:**
+---
+
+## Report simplifier
+
+| Method | Path | Roles | Notes |
+|---|---|---|---|
+| `POST` | `/reports` | any authenticated role; a patient only for itself | body `{ report }` including the extracted fields |
+| `PATCH` | `/reports/:id` | doctor, nurse, admin | `{ doctorNotes }`, or `{ archived, resolvedReason }` |
+| `POST` | `/inquiries` | any authenticated role; a patient only for itself | recorded in the audit ledger |
+
+Extraction (simulated OCR, dictionary matching, reference-range scoring, plain-language text) runs in
+the browser in `src/engine/reportEngine.ts`; the API stores the result and enforces who may attach it
+to whom. Original document bytes are never uploaded.
+
+---
+
+## Shortage intelligence
+
+| Method | Path | Roles | Notes |
+|---|---|---|---|
+| `POST` | `/transfers/:id/decision` | admin | body `{ proposal, decision }` |
+| `POST` | `/alerts/:id/acknowledge` | admin, doctor, nurse | body `{ alert }` |
+
+Live redistribution proposals are derived on read by the engine and are not stored. A decision is
+stored, and when it is an approval the API re-applies the ward move itself:
+
 ```json
 {
-  "name": "Priya Sharma",
-  "dob": "1985-03-12",
-  "gender": "female",
-  "contact": "+91-9876543210",
-  "bloodGroup": "B+"
+  "proposal": {
+    "id": "proposal-med-ins-glar-1-CENTRAL_STORE-GENERAL_A",
+    "medicineId": "med-ins-glar",
+    "drugName": "Lantus Insulin Glargine",
+    "fromWard": "CENTRAL_STORE",
+    "toWard": "GENERAL_A",
+    "quantity": 6,
+    "surplusAtSource": 37,
+    "deficitAtTarget": 0,
+    "rationale": "…",
+    "estimatedSpsDrop": 14.1,
+    "wardsRecovered": 1,
+    "status": "proposed"
+  },
+  "decision": "approved"
 }
 ```
 
----
-
-## 4. Shortage Detection & Supply Intelligence
-
-### GET `/shortages`
-Returns current inventory items categorized by shortage probability risk score[cite: 16].  
-**Access**: `admin`, `doctor`[cite: 7, 17]
-
-**Response (200 OK):**
-```json
-{
-  "success": true,
-  "data": [
-    {
-      "medicineId": "64a1inv001",
-      "brandName": "Augmentin 625 Duo",
-      "genericName": "Amoxicillin + Clavulanic Acid",
-      "currentStock": 140,
-      "riskScore": 0.88,
-      "projectedStockoutDays": 4,
-      "recommendedAction": "Expedite reorder; substitute with Cefuroxime Axetil 500mg if required."
-    }
-  ]
-}
-```
+Only the ward holdings change: the facility total is untouched, which is what makes a redistribution
+stock-neutral.
 
 ---
 
-## 5. Prescriptions & Clinical CPOE
+## Administration
 
-### POST `/treatments`
-Records a clinical diagnosis and computerized prescription with automated inventory reservation[cite: 2, 16].  
-**Access**: `doctor`[cite: 7, 17]
-
-**Request:**
-```json
-{
-  "patientId": "64a1b2c3d4e5f888",
-  "diagnosis": "Type 2 Diabetes Mellitus",
-  "prescriptions": [
-    {
-      "medicineId": "64a1inv001",
-      "dosage": "500mg",
-      "frequency": "twice daily",
-      "durationDays": 30
-    }
-  ]
-}
-```
-
----
-
-## 6. Billing & POS Invoices
-
-### POST `/billing/invoices`
-Generates an itemized patient invoice[cite: 16].  
-**Access**: `cashier`, `admin`[cite: 7, 17]
-
-### PATCH `/billing/invoices/:id/pay`
-Records an approved payment transaction (cash, card, UPI, or insurance)[cite: 2, 16].  
-**Access**: `cashier`[cite: 17]
+| Method | Path | Roles | Notes |
+|---|---|---|---|
+| `POST` | `/demo/reset` | admin | restores the seeded dataset; staff, patients and auth users survive |
+| `GET` | `/health` | public | liveness and mode |

@@ -2,7 +2,7 @@
 
 ## 1. Dynamic Signal Ingestion
 
-The Shortage Intelligence Engine runs every 6 hours as an asynchronous BullMQ worker[cite: 2, 14]. It evaluates routine clinical transactions rather than waiting for manual supply reports[cite: 2, 14].
+The Shortage Intelligence Engine is a pure module (`src/engine/shortageEngine.ts`) that scores the whole formulary on read, and is re-run by the API after any write that changes a stock row. It evaluates routine clinical transactions rather than waiting for manual supply reports. A scheduled 6-hourly batch job is the natural production extension; it is not implemented, and the current scoring model does not need it.
 
 | Input Signal | Clinical Origin | Description |
 |---|---|---|

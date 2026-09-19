@@ -1,14 +1,18 @@
 # SmartMedic
 
-An interactive prototype that unifies **hospital operations**, **predictive medicine shortage
-intelligence**, and a **plain-language medical report simplifier** in a single client-side
-application.
+A working full-stack system that unifies **hospital operations**, **predictive medicine shortage
+intelligence**, and a **plain-language medical report simplifier**.
 
-It runs immediately with **zero backend setup**. All state lives in a seeded in-memory database
-persisted to `localStorage`, and every calculation runs in the browser.
+- **Front end** — React 18 + TypeScript single-page application built with Vite, styled with Tailwind.
+- **API** — TypeScript serverless functions (`api/`) deployed on Vercel. All clinical, supply and
+  financial rules live here, not in the browser.
+- **Database** — PostgreSQL on Supabase, with a full relational schema in
+  [`supabase/migrations/0001_init.sql`](supabase/migrations/0001_init.sql).
+- **Authentication** — Supabase Auth (email + password). Every request carries the caller's access
+  token, and the API resolves it to a hospital profile that carries the role.
 
-> **Prototype notice.** This is a demonstration system built on synthetic data. It is not connected
-> to any clinical system and does not process real patient information.
+> **Prototype notice.** A demonstration system on synthetic data. It is not connected to any clinical
+> system and holds no real patient information.
 
 ---
 
@@ -16,35 +20,71 @@ persisted to `localStorage`, and every calculation runs in the browser.
 
 | Subsystem | What it does |
 |---|---|
-| **Hospital operations** | Role portals for Admin, Doctor, Nurse, Receptionist, Cashier and Patient: triage registration, appointment scheduling, CPOE prescribing, bedside eMAR administration, ward stock, itemised invoicing and POS collection. |
+| **Hospital operations** | Role portals for Admin, Doctor, Nurse, Receptionist, Cashier and Patient: triage registration, scheduling, CPOE prescribing, bedside eMAR administration, ward stock, itemised invoicing and POS collection. |
 | **Shortage intelligence** | Scores the whole formulary on a dynamic triangulated metric combining EWMA consumption velocity, dynamic supplier lead time, regional pressure and shelf-buffer depletion, then turns stranded ward stock into approvable inter-ward redistributions and a scenario sandbox. |
-| **Report simplifier** | Drag-and-drop report ingestion, simulated OCR, biomarker dictionary matching, reference-range scoring, non-diagnostic plain-language explanations, longitudinal trendlines and an exportable disclaimered summary. |
+| **Report simplifier** | Report ingestion, simulated OCR, biomarker dictionary matching, reference-range scoring, non-diagnostic plain-language explanations, longitudinal trendlines and an exportable disclaimered summary. |
 
 ---
 
 ## Quick start
 
+### Option A — no credentials at all (recommended first run)
+
+The API falls back to the seeded dataset when Supabase is not configured, so the entire stack runs
+locally with nothing to sign up for.
+
 ```bash
 npm install
-npm run dev
+npm run dev:stack     # API on :8787 + Vite on :5173, one terminal
 ```
 
-Then open the URL Vite prints (default <http://localhost:5173>).
+Open <http://localhost:5173>. The sign-in screen lists the seeded identities; pick any of them and you
+are in. No password is checked in this mode, and the API says so on every response.
+
+Two terminals instead of one? `npm run dev:api` and `npm run dev`.
+
+### Option B — against Postgres
 
 ```bash
-npm run typecheck   # tsc --noEmit
-npm run build       # typecheck + production bundle
-npm run preview     # serve the production bundle
+cp .env.example .env         # fill in your Supabase values
+npm run seed                 # schema must already be applied; see docs/deployment.md
+npm run dev:stack
 ```
 
-There is nothing else to configure: no database, no `.env`, no API keys, no external services.
+Now the sign-in screen requires a real password, and every change lands in Postgres.
+
+```bash
+npm run typecheck            # tsc --noEmit over src, api, server and scripts
+npm run build                # typecheck + production bundle
+npm run seed:dry-run         # show what the seed would write, change nothing
+```
 
 ---
 
-## The demo in five minutes
+## Signing in
 
-Use the **role switcher in the top bar** to move between all six portals. Every portal reads the same
-seeded database, so an action taken as one role is immediately visible to the others.
+`npm run seed` provisions one account per seeded identity. All of them share the password
+`SmartMedic@2026` (override with `SEED_DEMO_PASSWORD`), and all of them are confirmed, so no inbox is
+involved.
+
+| Role | Email |
+|---|---|
+| Admin | `meera.krishnan@smartmedic.io` |
+| Doctor | `dr.sharma@smartmedic.io`, `dr.rao@smartmedic.io` |
+| Nurse | `fatima.sheikh@smartmedic.io`, `joseph.thomas@smartmedic.io` |
+| Receptionist | `kavya.nair@smartmedic.io` |
+| Cashier | `arjun.deshpande@smartmedic.io` |
+| Patient | `priya.sharma@example.com` (and three more) |
+
+**Change or delete these before any real use.** They exist so the prototype can be demonstrated.
+
+Staff accounts can still switch roles from the masthead, which is what makes the end-to-end walkthrough
+below possible in one session. A patient account cannot: the switcher is withheld, it sees only its own
+record, and the API refuses anything else regardless of what the client asks for.
+
+---
+
+## The demo in eight minutes
 
 **1 · Admin — find the problem.**
 Land on the *Shortage control room*. Two molecules open at **Critical**: Augmentin 625 Duo (SPS 98,
@@ -54,11 +94,11 @@ its pre-surge baseline, the stock ledger separating physical, reserved and **str
 the per-ward cover table.
 
 **2 · Admin — fix it without buying anything.**
-In *Inter-ward redistribution*, the top proposal moves 6 insulin pens from the central store to
-General Ward A for a projected **−14.1 point** drop. Press **Approve** and the score falls from 78 to
-63.9 on the spot: ward stock is rebalanced, total facility stock is untouched, and the decision is
-written to the redistribution ledger with the actor and timestamp. Proposals that cannot move the
-score are filtered out rather than offered as a meaningless action.
+In *Inter-ward redistribution*, the top proposal moves stock from a ward holding above its par level
+into a short one for a projected score drop. Press **Approve**: the ward holdings are rebalanced, the
+facility total is untouched, the molecule's risk score falls, and the decision is written to the
+redistribution ledger with the actor and timestamp. Proposals that cannot move the score are filtered
+out rather than offered as a meaningless action.
 
 **3 · Admin — pressure-test the forecast.**
 *Scenario sandbox* re-runs the whole formulary under a demand surge, a distributor default, a
@@ -74,8 +114,9 @@ Open the *CPOE console* with **Aarav Menon** selected. Add Augmentin and the con
 **severe allergy conflict**: he has a recorded penicillin anaphylaxis, and the brand name never says
 penicillin — the drug-class map catches it and offers in-stock Cefuroxime Axetil instead. On
 **Priya Sharma**, Augmentin shows a critical stock guard with live days-of-cover and a sparkline.
-Sign the prescription and the affected molecules are shown before and after: the course is dispensed
-immediately and the shortage forecast moves while the doctor is still in the room.
+Sign the prescription and the affected molecules are shown before and after. The dispense is applied
+by the API against the stock row it reads from the database, so the figure that lands on screen is
+the one Postgres holds.
 
 **6 · Nurse — close the loop at the bedside.**
 *eMAR round* shows the charted doses for the ward. Chart an overdue dose, capture the
@@ -85,15 +126,17 @@ shows the same holdings against each ward's own par level.
 **7 · Cashier — bill the encounter.**
 *Invoice desk* pulls the unbilled medication straight out of the patient's charted treatment, adds
 standard tariff items and derives the totals. *POS checkout* collects by cash, card, UPI or insurance
-claim and prints a receipt; part payments are capped at the outstanding balance.
-*Reconciliation* shows the day book.
+claim and prints a receipt; part payments are capped at the outstanding balance. *Reconciliation*
+shows the day book.
 
 **8 · Patient — read it in plain language.**
-Switch to the **Patient** role (Priya Sharma). Her four quarterly panels are already on file and
-parsed. Open the latest: 15 recognised values, each with a reference range and an everyday-language
-explanation, with the mandatory disclaimer pinned to the viewer and to every export. *Health trends*
-draws each biomarker against its own reference band — HbA1c falling across four readings, creatinine
-rising — and narrates direction of travel without ever asserting a diagnosis.
+Sign in as `priya.sharma@example.com`. Her four quarterly panels are already on file and parsed. Open
+the latest: each value has a reference range and an everyday-language explanation, with the mandatory
+disclaimer pinned to the viewer and to every export. *Health trends* draws each biomarker against its
+own reference band — HbA1c falling across four readings, creatinine rising — and narrates direction of
+travel without ever asserting a diagnosis.
+
+*Reset to seeded state* in the sidebar (admins only) restores the opening scenario.
 
 ---
 
@@ -119,18 +162,49 @@ prescribes, administers or transfers stock.
 
 Also seeded: 7 staff across 5 roles, 4 patient records (2 currently admitted), 6 appointments,
 3 prescriptions, 14 eMAR entries with realistic variances, 3 invoices in three settlement states,
-5 vitals records, **6 parsed laboratory reports**, and an initial audit trail.
+5 vitals records, 6 parsed laboratory reports, and an opening audit trail.
 
 Priya Sharma's history is the simplifier showcase: HbA1c falling `8.4 → 7.8 → 7.5 → 7.2`, creatinine
 rising `1.1 → 1.2 → 1.3 → 1.4`, across panels dated 18, 11, 6 and 1 months ago.
 
-**Reset demo** in the sidebar restores the opening scenario at any time. The stored snapshot is keyed
-to the calendar day, so reopening the prototype tomorrow re-seeds rather than restoring a stale
-appointment queue.
+The same dataset is the seed source for both modes, so a local demo and a deployment show identical
+figures.
 
 ---
 
-## How the forecasting works
+## Architecture
+
+```text
+browser (React SPA)
+      │  Supabase access token  +  JSON over /api
+      ▼
+Vercel serverless function  api/[...path].ts
+      │  verify token → resolve profile → check role → run the rule
+      ▼
+Postgres (Supabase)  ·  RLS enabled on every table, no permissive policy
+```
+
+Four decisions shape the code:
+
+**The API owns the rules.** A prescription does not send a new stock number; it sends the treatment,
+and the API reads the medicine, dispenses through the same `dispenseStock` function the browser uses,
+writes the result, and returns the row it committed. A ward transfer is re-applied server-side. An
+invoice's status is recomputed from its transaction ledger. Optimistic UI is a latency trick, never a
+source of truth.
+
+**Audit entries are written by the server.** The ledger records the identity the API authenticated,
+not one the client claimed. The browser keeps an optimistic copy for display and replaces it with the
+ledger on the next load.
+
+**The browser never touches Postgres.** It uses the anon key for credentials only. Every table has RLS
+enabled with no permissive policy, so an anon-key query returns nothing; the API reads and writes with
+the service role.
+
+**Patients are scoped on the server.** A patient login receives its own record, its own reports and
+invoices, and the consultant directory — and nothing else. The formulary, supply position, other
+patients, and the audit ledger are filtered out before the response is sent.
+
+### Forecasting
 
 The engine implements the formulation in [`docs/shortage-detection.md`](docs/shortage-detection.md):
 
@@ -141,12 +215,9 @@ LT_dynamic  = LT_contracted · (1 + σ/μ) · R_vendor
 SPS         = min(100, max(0, [1 − DIR/(LT_dynamic + SS_days)]·100 + Ψ))
 ```
 
-Two design decisions are worth calling out.
-
-**Stranded stock.** Inventory sitting above a ward's own par level is real, but it cannot serve a
-ward that is short without a transfer, so it is excluded from effective cover. This is what makes an
-inter-ward transfer a genuine risk-reduction action rather than bookkeeping: releasing stranded stock
-raises effective cover without a single extra unit entering the building.
+**Stranded stock.** Inventory sitting above a ward's own par level is real, but it cannot serve a ward
+that is short without a transfer, so it is excluded from effective cover. This is what makes an
+inter-ward transfer a genuine risk-reduction action rather than bookkeeping.
 
 **Capped signal legs.** Ψ is assembled from four independently capped legs — demand surge, lead-time
 slippage, regional pressure and buffer depletion — so no single signal can dominate a forecast on its
@@ -158,53 +229,108 @@ own, and every score is explainable by the evidence shown in its drill-down.
 
 ```text
 smartmedic/
-├── index.html
+├── api/
+│   ├── [...path].ts               # serverless entry point: one catch-all function
+│   └── _lib/
+│       ├── routes.ts              # route table + response envelope
+│       ├── services.ts            # domain rules: dispense, transfer, billing, scoping
+│       ├── auth.ts                # token verification → hospital profile
+│       ├── registry.ts            # domain model → SQL columns, including child tables
+│       ├── http.ts                # request contracts and validation helpers
+│       ├── config.ts              # environment, and the production safety rail
+│       └── repo/                  # Repository: supabase.ts, memory.ts, index.ts
+├── supabase/migrations/           # schema, indexes, row level security
+├── scripts/                       # seed.ts, dev-stack.mjs
+├── server/dev.ts                  # local API server running the same router
 ├── src/
-│   ├── App.tsx                    # provider + shell + portal router
+│   ├── App.tsx                    # session gate → store → shell → portal router
 │   ├── types.ts                   # domain model shared by everything
-│   ├── data/
-│   │   ├── mockData.ts            # seeded in-memory database
-│   │   └── scenarios.ts           # disruption presets for the sandbox
-│   ├── engine/
-│   │   ├── shortageEngine.ts      # EWMA, DIR, dynamic lead time, Ψ, SPS, transfers, sandbox
-│   │   ├── reportEngine.ts        # biomarker dictionary, OCR simulation, trends
-│   │   └── billingEngine.ts       # invoice totals, payment split, reconciliation
-│   ├── store/
-│   │   ├── reducer.ts             # pure reducer; every mutation writes one audit entry
-│   │   └── AppStore.tsx           # provider, derived forecasts, localStorage persistence
+│   ├── lib/                       # API client, Supabase auth client
+│   ├── data/                      # seeded database, scenario presets
+│   ├── engine/                    # shortage, report and billing engines (pure)
+│   ├── store/                     # session provider, reducer, API-backed store
 │   ├── charts/                    # hand-written SVG: line, sparkline, gauge, bars, donut
 │   ├── ui/                        # tokens, primitives, icons, navigation, shell
 │   ├── components/                # report simplifier, medicine risk drill-down
-│   └── pages/                     # one portal per role
+│   └── pages/                     # login + one portal per role
 └── docs/                          # architecture, schema, API and subsystem specifications
 ```
 
-Each `engine/` module is pure: same inputs, same output, no global reads. That is what lets the
-scenario sandbox re-forecast a hypothetical without touching live inventory, and what keeps the audit
-ledger from drifting away from the data.
+Each `engine/` module is pure and shared: the API imports the same `dispenseStock`,
+`applyWardTransfer` and `derivePaymentStatus` the browser uses, so a rule cannot mean one thing on
+screen and another in the database.
 
 ---
 
 ## Permissions
 
-Role capability is enforced by the **navigation model**, not by hidden buttons: a cashier has no
-route for the shortage control room. The full matrix is documented in
-[`docs/user-roles.md`](docs/user-roles.md) and is also rendered inside the app under
-*Governance & audit*.
+Role capability is enforced twice over: the navigation model gives a role no route it cannot use, and
+the API re-checks the role on every write. The full matrix is documented in
+[`docs/user-roles.md`](docs/user-roles.md) and rendered in the app under *Governance & audit*.
+
+| Endpoint | Roles |
+|---|---|
+| `POST /api/treatments` | doctor, admin |
+| `POST /api/invoices`, `POST /api/invoices/:id/payments` | cashier, admin |
+| `POST /api/transfers/:id/decision` | admin |
+| `PATCH /api/administrations/:id` | nurse, doctor, admin |
+| `POST /api/vitals` | nurse, doctor, admin |
+| `POST /api/reports` | any authenticated role, patient scoped to self |
+| `PATCH /api/reports/:id` | doctor, nurse, admin |
+| `GET /api/bootstrap` | any authenticated role, filtered by role |
+
+---
+
+## Deployment
+
+See [`docs/deployment.md`](docs/deployment.md) for the full checklist: creating the Supabase project,
+applying the migration, seeding, and wiring the environment variables into Vercel. The short version:
+
+1. Create a Supabase project, run `supabase/migrations/0001_init.sql` in the SQL editor.
+2. `cp .env.example .env`, paste the project URL, anon key and service role key; `npm run seed`.
+3. Import this repository into Vercel and add the same four variables to the project settings.
+4. Deploy. `vercel.json` builds the SPA and mounts `api/[...path].ts` as the API.
 
 ---
 
 ## Deliberate limitations
 
 - **OCR is simulated.** Text-bearing files (`.txt`, `.csv`) are read directly; PDF and image uploads
-  resolve to a synthetic transcript for the selected panel category with realistic confidence
-  scores. No recognition service is contacted and no file leaves the browser.
-- **No authentication.** Roles are switched from the top bar for demonstration; there is no login,
-  JWT, or server-side session.
-- **No server.** The documented Node/Express/MongoDB/Redis stack in `docs/` is the production
-  target; this prototype is the front end that would sit on top of it.
-- **Unit values are illustrative.** Reference ranges describe typical adult values and are not
-  age- or sex-adjusted.
+  resolve to a synthetic transcript for the selected panel category with realistic confidence scores.
+  No recognition service is contacted.
+- **Report files are not stored.** The parsed values, units, ranges and the raw transcript are
+  persisted; the original document bytes are deliberately discarded.
+- **No rate limiting.** `docs/deployment.md` lists it among the hardening steps that a real
+  deployment needs.
+- **Unit values are illustrative.** Reference ranges describe typical adult values and are not age- or
+  sex-adjusted.
+- **The service role key is required on the server.** It must never be given a `VITE_` prefix, because
+  anything with that prefix is inlined into the browser bundle.
+
+---
+
+## Verification
+
+What was run against this revision:
+
+| Check | Result |
+|---|---|
+| `npx tsc --noEmit` (strict, `noUnusedLocals`, over `src` + `api` + `server` + `scripts`) | clean |
+| `npm run build` | clean |
+| 54 API assertions against the repository adapters | all passed |
+| 14 reducer reconciliation assertions | all passed |
+| All 19 role views rendered through the real shell and store | all rendered, no runtime errors |
+| Live HTTP: health, bootstrap, role refusal (403), billing (200), unknown route (404) | as expected |
+| Dev stack: SPA served, `/api` proxied, deep links resolve | as expected |
+
+---
+
+## Repository contributors
+
+Commit `d54f0c7` (`patient-portal` readability) in this repository's history was authored by a
+second contributor and is kept as-is, unrewritten — it is their work and it is not being
+re-attributed. The commit is already published, so the project's history shows two authors. Every
+other commit is by the repository owner.
 
 ---
 

@@ -1,61 +1,58 @@
-# SmartMedic
+# SmartMedic — product overview
 
-An enterprise-grade hospital organization platform coupling intelligent medicine shortage detection, multi-role hospital operations, and an **AI-Powered Medical Report Simplifier** for clinical and patient transparency[cite: 2, 11].
+This folder holds the specifications. For setup, credentials and the deployment checklist, start with
+the [root README](../README.md).
 
-## Overview
+## The problem
 
-SmartMedic unifies acute clinical administration, regional pharmaceutical supply defense, and diagnostic patient accessibility into a single system[cite: 2, 11]:
-- **Predictive Medicine Shortage Engine**: Ingests indirect clinical consumption signals, replenishment lead times, and regional constraints to forecast pharmaceutical disruptions 14 to 45 days in advance[cite: 2, 14].
-- **Medical Report Simplifier**: Ingests complex lab reports (PDF/scans), extracts tests, values, and units via OCR, and generates structured, plain-language explanations with longitudinal biomarker tracking and medical disclaimers[cite: 16].
-- **Centralized Hospital Operations**: End-to-end administration of patient triage, appointment schedules, physician prescriptions (CPOE), bedside nursing administration (eMAR), and cashier point-of-sale invoicing[cite: 2, 11, 16, 17].
-- **Fine-Grained RBAC**: Isolated role portals for Admins, Doctors, Nurses, Receptionists, and Cashiers[cite: 11, 17].
+A hospital runs on three things that are usually three systems: the clinical record, the pharmacy
+shelf, and the patient's understanding of their own results. When they are separate, a prescription is
+written without knowing that the molecule has four days of cover left, a ward holds stock another ward
+needs and neither can see it, and a patient leaves with a lab printout they cannot read.
 
-## Tech Stack
+SmartMedic puts one record underneath all three.
 
-| Layer | Technology |
+## The three subsystems
+
+**Hospital operations.** Role portals for Admin, Doctor, Nurse, Receptionist, Cashier and Patient.
+Registration and triage, scheduling, computerised prescribing with live stock and allergy guards,
+bedside eMAR administration with pre-dose observations, ward holdings against par levels, itemised
+invoicing, POS collection and reconciliation. Navigation is per role, and the API re-checks every
+write, so a cashier has no route to the shortage control room and no way to reach it either.
+
+**Predictive shortage intelligence.** A dynamic triangulated metric over the whole formulary:
+
+- **Consumption velocity** — an EWMA burn rate, so a surge is detected while it is happening rather
+  than in a monthly report.
+- **Supply slippage** — contracted lead time adjusted by the vendor's observed delivery variance and
+  reliability index.
+- **Regional pressure** — how many neighbouring facilities are reporting the same molecule as
+  constrained.
+- **Buffer depletion** — mandatory safety stock expressed in days of cover.
+
+Each leg is independently capped, so no single signal can dominate, and every score is explainable by
+the evidence in its drill-down. Inventory sitting above a ward's own par level is *stranded*: it is
+real, but it cannot serve a short ward without a transfer, which is why releasing it lowers risk
+without buying a single extra unit.
+
+**Medical report simplifier.** Ingestion of a lab report, extraction of each test with its value, unit
+and reference range, an everyday-language explanation of what the biomarker measures, longitudinal
+trends against each biomarker's own reference band, and an exportable summary carrying a mandatory
+non-diagnostic disclaimer. It translates; it never diagnoses.
+
+## Documentation map
+
+| Document | Contents |
 |---|---|
-| Frontend | React.js (v18), TypeScript, Material-UI (MUI v5), Redux Toolkit[cite: 2, 11] |
-| Backend | Node.js (LTS), Express.js (Controller-Service-Repository)[cite: 11, 12] |
-| Database & Caching | MongoDB 6.0+ (Mongoose ODM), Redis 7.0[cite: 2, 11] |
-| Background Jobs | BullMQ (6-hour shortage cron & async OCR parsing)[cite: 2, 14] |
-| Report OCR & Parsing | Tesseract.js / AWS Textract, PDF-Parse[cite: 11] |
-| Auth & Security | JWT, OAuth 2.0, Helmet, Strict RBAC Middleware[cite: 2, 11, 13] |
-| DevOps & Monitoring | Docker, Docker Compose, Nginx, Prometheus, Grafana, ELK Stack[cite: 2, 11, 13] |
+| [architecture.md](architecture.md) | System topology, layers, security posture, deliberate omissions |
+| [database-schema.md](database-schema.md) | 19 tables, design rules, relationships |
+| [api-reference.md](api-reference.md) | Endpoints, roles, request and response shapes, error codes |
+| [deployment.md](deployment.md) | Signup and credential checklist, environment variables, troubleshooting |
+| [shortage-detection.md](shortage-detection.md) | The forecasting formulation and its parameters |
+| [report-simplifier.md](report-simplifier.md) | The extraction and explanation pipeline |
+| [user-roles.md](user-roles.md) | The RBAC matrix |
 
-## Quick Start
+## Status
 
-```bash
-git clone [https://github.com/your-org/smartmedic.git](https://github.com/your-org/smartmedic.git)
-cd smartmedic
-
-cd backend && npm install
-cd ../frontend && npm install
-
-cp backend/.env.example backend/.env
-cp frontend/.env.example frontend/.env
-
-cd backend && npm run dev
-# In a separate terminal:
-cd frontend && npm start
-```
-
-## Project Structure
-
-```text
-smartmedic/
-├── frontend/                     # React 18, MUI v5, Redux Toolkit
-│   ├── src/
-│   │   ├── components/report/    # OCR report uploader & longitudinal charts
-│   │   ├── pages/                # Admin, Doctor, Nurse, Cashier, Receptionist views
-│   │   └── store/                # RTK slices (auth, shortage, reports, clinical)
-├── backend/                      # Express API Gateway
-│   ├── src/
-│   │   ├── controllers/          # HTTP request handlers
-│   │   ├── services/             # Shortage math, OCR extraction, billing
-│   │   ├── models/               # Mongoose schemas (Patients, Reports, Inventory)
-│   │   └── jobs/                 # BullMQ asynchronous workers
-├── docker/                       # Multi-stage Dockerfiles & compose manifests
-└── docs/                         # Technical architecture and specs
-```
-
-See `docs/architecture.md` for the comprehensive system design[cite: 11].
+A working prototype on synthetic data, deployed as described in the root README. It is not connected
+to any clinical system and holds no real patient information.

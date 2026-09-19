@@ -15,7 +15,7 @@ The **Medical Report Simplifier** bridges communication gaps between complex dia
 [ Preprocessing (Binarization, Denoising) ]
         │
         ▼
-[ OCR Text Engine (Tesseract / Textract) ]
+[ Simulated OCR text engine (see "Extraction status" below) ]
         │
         ▼
 [ Biomarker Regex & Named-Entity Matcher ]
