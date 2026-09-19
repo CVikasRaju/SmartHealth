@@ -8,6 +8,7 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import { useApp } from "@/store/AppStore";
+import { useSession } from "@/store/SessionProvider";
 import { ROLE_META, RISK_TOKENS } from "@/ui/theme";
 import { HOME_VIEW, NAV_BY_ROLE, findNavItem } from "@/ui/navigation";
 import RoleSwitcher from "@/ui/RoleSwitcher";
@@ -111,9 +112,48 @@ function RiskSummary() {
   );
 }
 
+/**
+ * Write-through indicator.
+ *
+ * Optimistic UI is only defensible if the operator can see when a change has
+ * not reached the database, so a failed write is stated plainly with a way back.
+ */
+function SyncIndicator() {
+  const { sync, actions } = useApp();
+
+  if (sync.error) {
+    return (
+      <button
+        type="button"
+        onClick={actions.resync}
+        title={sync.error}
+        className="inline-flex items-center gap-1.5 border border-risk-critical/40 bg-risk-critical/[0.06] px-2.5 py-1.5 text-xs text-risk-critical"
+      >
+        <Icon name="alert" size={12} />
+        Save failed &middot; retry
+      </button>
+    );
+  }
+
+  if (sync.pending > 0) {
+    return (
+      <span className="inline-flex items-center gap-1.5 border border-rule bg-paper px-2.5 py-1.5 text-xs text-ink-500">
+        <span className="h-3 w-3 animate-spin border border-ink-300 border-t-accent" />
+        Saving
+      </span>
+    );
+  }
+
+  return null;
+}
+
 export default function AppShell({ children }: { children: ReactNode }) {
-  const { state, derived, actions } = useApp();
+  const { state, derived, actions, sync, profile, mode } = useApp();
+  const { signOut } = useSession();
   const role = state.session.role;
+  // A patient account holds one patient's record; the role switcher and the
+  // supply alert rail are staff affordances and are withheld from it.
+  const isPatientAccount = profile?.role === "patient";
   const meta = ROLE_META[role];
   const nav = NAV_BY_ROLE[role];
   const active = findNavItem(role, state.activeView);
@@ -154,8 +194,9 @@ export default function AppShell({ children }: { children: ReactNode }) {
               <Icon name="refresh" size={12} className="text-ink-400" />
               {clock}
             </span>
-            <AlertRail />
-            <RoleSwitcher />
+            <SyncIndicator />
+            {isPatientAccount ? null : <AlertRail />}
+            {isPatientAccount ? null : <RoleSwitcher />}
           </div>
         </div>
 
@@ -172,6 +213,11 @@ export default function AppShell({ children }: { children: ReactNode }) {
                 <Icon name="alert" size={12} className="text-risk-critical" />
                 Highest risk: <span className="font-semibold text-ink-900">{worst.brandName}</span> at{" "}
                 {worst.sps} SPS ({formatDays(worst.dir)} days cover)
+              </span>
+            ) : null}
+            {sync.error ? (
+              <span className="w-full text-risk-critical sm:ml-auto sm:w-auto">
+                {sync.error} The record has been reloaded from the database.
               </span>
             ) : null}
           </div>
@@ -250,14 +296,29 @@ export default function AppShell({ children }: { children: ReactNode }) {
             ) : null}
 
             <div className="border border-rule bg-paper p-3">
-              <p className="sm-eyebrow">Demonstration data</p>
+              <p className="sm-eyebrow">Data source</p>
               <p className="mt-1.5 text-[10px] leading-relaxed text-ink-500">
-                All state lives in this browser. Reseed to restore the opening scenario.
+                {mode === "supabase"
+                  ? "Every change is written to the hospital database and appended to the audit ledger."
+                  : "No database is configured, so the API is serving the seeded dataset in memory."}
               </p>
-              <Button size="sm" variant="secondary" fullWidth className="mt-2" onClick={actions.resetDemo}>
-                <Icon name="refresh" size={12} />
-                Reset to seeded state
-              </Button>
+              {sync.lastSyncedAt ? (
+                <p className="mt-1.5 text-[10px] text-ink-400">
+                  Last write accepted at{" "}
+                  {new Date(sync.lastSyncedAt).toLocaleTimeString("en-GB", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    second: "2-digit",
+                  })}
+                  .
+                </p>
+              ) : null}
+              {profile?.role === "admin" ? (
+                <Button size="sm" variant="secondary" fullWidth className="mt-2" onClick={actions.resetDemo}>
+                  <Icon name="refresh" size={12} />
+                  Reset to seeded state
+                </Button>
+              ) : null}
             </div>
 
             <div className="border border-rule bg-paper p-3">
@@ -267,21 +328,29 @@ export default function AppShell({ children }: { children: ReactNode }) {
                   className="grid h-8 w-8 shrink-0 place-items-center text-[11px] font-bold text-white"
                   style={{ background: meta.accent }}
                 >
-                  {initials(role === "patient" ? (derived.currentPatient?.name ?? "Patient") : (derived.currentStaff?.fullName ?? "User"))}
+                  {initials(profile?.fullName ?? "User")}
                 </span>
                 <span className="min-w-0">
                   <span className="block truncate text-xs font-medium text-ink-900">
-                    {role === "patient"
-                      ? (derived.currentPatient?.name ?? "Patient portal")
-                      : displayName(derived.currentStaff?.fullName ?? "—")}
+                    {displayName(profile?.fullName ?? "Unknown account")}
                   </span>
-                  <span className="block truncate text-[10px] text-ink-400">
-                    {role === "patient"
-                      ? (derived.currentPatient?.mrn ?? "")
-                      : (derived.currentStaff?.department ?? "")}
-                  </span>
+                  <span className="block truncate text-[10px] text-ink-400">{profile?.email ?? ""}</span>
                 </span>
               </div>
+
+              <p className="mt-2 border-t border-rule-soft pt-2 text-[10px] leading-relaxed text-ink-500">
+                Acting as{" "}
+                <span className="font-medium text-ink-700">
+                  {role === "patient"
+                    ? (derived.currentPatient?.name ?? "Patient portal")
+                    : displayName(derived.currentStaff?.fullName ?? "\u2014")}
+                </span>{" "}
+                &middot; {meta.label}
+              </p>
+
+              <Button size="sm" variant="secondary" fullWidth className="mt-2" onClick={() => void signOut()}>
+                Sign out
+              </Button>
             </div>
 
             <p className="px-1 text-[10px] leading-relaxed text-ink-400">
@@ -304,8 +373,8 @@ export default function AppShell({ children }: { children: ReactNode }) {
       </div>
 
       <footer className="no-print border-t border-rule bg-paper px-4 py-3 text-center text-[10px] leading-relaxed text-ink-400 lg:px-6">
-        {BRANDING.name} {BRANDING.documentTitle} &middot; v{BRANDING.version} &middot; {BRANDING.provenance} Navigate
-        between roles from the masthead to follow one encounter end to end.
+        {BRANDING.name} {BRANDING.documentTitle} &middot; v{BRANDING.version} &middot; {BRANDING.provenance} Staff
+        accounts can switch roles from the masthead to follow one encounter end to end.
         {state.session.role !== "patient" ? (
           <span className="ml-1">
             <button

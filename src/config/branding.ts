@@ -27,7 +27,7 @@ export const BRANDING = {
   accent: "#14416b",
 
   /** Printed in the footer and on every exported report. */
-  provenance: "Seeded in-memory dataset. Not connected to any live clinical system.",
+  provenance: "Demonstration dataset. Not connected to any live clinical system.",
 
   /** Bumped when the seeded dataset shape changes, so a stale demo reseeds. */
   version: "1.0.0",
