@@ -3,15 +3,24 @@
  *
  * Implements the pipeline described in `docs/report-simplifier.md`:
  *
- *   upload -> simulated OCR -> biomarker dictionary match -> normalisation and
- *   reference-range scoring -> plain-language translation -> longitudinal
+ *   upload -> text acquisition -> biomarker dictionary match -> normalisation
+ *   and reference-range scoring -> plain-language translation -> longitudinal
  *   history linking.
  *
- * The OCR step is simulated on purpose: this prototype ships with zero backend
- * and zero paid services, so no text-recognition provider is contacted. Files
- * that already contain text (.txt / .csv) are read directly; everything else
- * (PDF, PNG, JPG) resolves to a synthetic OCR transcript for the selected panel
- * category and reports a simulated confidence score.
+ * Text acquisition has three realisations, selected by file type:
+ *
+ *   * a photo or scan (image file) is read by Tesseract WASM in the patient's
+ *     browser — see `src/lib/ocrEngine.ts`; no byte leaves the machine;
+ *   * a file that already contains text (.txt / .csv) is read directly;
+ *   * anything else (a PDF, whose text layer would need a separate parser) is
+ *     resolved deterministically against the seeded transcript for the selected
+ *     panel category. That path is not OCR and never claims to be: the UI and
+ *     the stored provenance label say exactly which one produced the values.
+ *
+ * The recognition stage is therefore pluggable, and it is the dictionary and
+ * validation layer that carries the accuracy: raw OCR is noisy, so matched
+ * aliases, unit canonicalisation and reference-range scoring — not the
+ * recogniser — are what make the numbers trustworthy.
  *
  * Nothing in this module asserts a diagnosis. Every explanation states what the
  * biomarker measures and how the result sits against its reference range.
@@ -519,6 +528,21 @@ function matchForm(raw: string): string {
 const UNIT_PATTERN =
   /(mg\s*\/\s*dl|gm\s*\/\s*dl|g\s*\/\s*dl|mg\s*\/\s*l|g\s*\/\s*l|mmol\s*\/\s*l|µiu\s*\/\s*ml|uiu\s*\/\s*ml|miu\s*\/\s*ml|ng\s*\/\s*dl|µg\s*\/\s*dl|ug\s*\/\s*dl|iu\s*\/\s*l|u\s*\/\s*l|ng\s*\/\s*ml|pg\s*\/\s*ml|million\s*\/\s*[µu]l|x?\s*10\s*\^?\s*3\s*\/\s*[µu]l|ml\s*\/\s*min\s*\/\s*1\.73\s*m2|mm\s*\/\s*hr|\bfl\b|%)/i;
 
+/**
+ * Unit glyphs *plus the bare exponent prefix*, used only for stripping values.
+ *
+ * A recogniser frequently reads `x10^3/uL` as `x10"`, `x10` or `x10^3` — the
+ * suffix is at the line's right edge, exactly where printouts get clipped. The
+ * bare fragment must be dropped before counting numbers, or its `10` becomes
+ * the reported result. The bare alternative is deliberately NOT part of
+ * `UNIT_PATTERN`, which extracts the display unit; a fragment without its
+ * scale is not a unit and should fall back to the dictionary's definition.
+ */
+const UNIT_STRIP_PATTERN = new RegExp(
+  `${UNIT_PATTERN.source}|x\\s*10\\s*\\^?\\s*3\\b`,
+  "gi",
+);
+
 const NUMBER_PATTERN = /(-?\d+(?:[.,]\d+)?)/;
 
 /** Canonical display form per normalised unit key. */
@@ -683,15 +707,21 @@ export function matchBiomarkerLine(raw: string): ExtractedField | null {
     const head =
       rangeMatch && rangeMatch.index !== undefined ? stripped.slice(0, rangeMatch.index) : stripped;
 
-    // Step 3: drop unit glyphs, including exponent forms such as "x10^3/uL",
-    // which would otherwise leave stray digits behind.
-    const cleaned = head.replace(new RegExp(UNIT_PATTERN.source, "gi"), " ");
+    // Step 3: drop unit glyphs, including exponent forms such as `x10^3/uL`
+    // and the truncated `x10` a clipped printout leaves behind.
+    const cleaned = head.replace(UNIT_STRIP_PATTERN, " ");
 
     const tokens = cleaned.match(new RegExp(NUMBER_PATTERN.source, "g"));
     if (!tokens || tokens.length === 0) continue;
 
-    // Step 4: the last surviving number on the row is the reported result.
-    const rawToken = tokens[tokens.length - 1];
+    // Step 4: the first surviving number is the reported result.
+    //
+    // Rows print as `name | value | unit | range | flag`, and the test name has
+    // already been stripped, so the value column is the *first* number left.
+    // Taking the last one silently substituted a partially-read range — an
+    // offline recogniser that clips a row's right edge used to report the
+    // range's low bound (or a stray exponent) as the patient's result.
+    const rawToken = tokens[0];
     const value = toNumber(rawToken);
     if (value === null) continue;
 
@@ -752,7 +782,8 @@ export function parseReportText(text: string): ExtractedField[] {
 }
 
 /* ------------------------------------------------------------------ */
-/* Simulated OCR                                                       */
+/* ------------------------------------------------------------------ */
+/* Deterministic extraction fallback                                   */
 /* ------------------------------------------------------------------ */
 
 export interface OcrProgressEvent {
@@ -840,8 +871,8 @@ export const SYNTHETIC_OCR_TRANSCRIPTS: Record<ReportCategory, string> = {
 };
 
 export const OCR_PIPELINE_STEPS = [
-  "Pre-processing scan (binarisation, deskew, denoise)",
-  "Running optical character recognition",
+  "Preparing scan (grayscale, contrast, deskew)",
+  "Reading characters (Tesseract WASM, in-browser)",
   "Matching biomarker dictionary aliases",
   "Normalising units and reference ranges",
 ] as const;
@@ -858,10 +889,13 @@ function isTextLike(fileName: string, mimeType: string): boolean {
 }
 
 /**
- * Simulated OCR run. Reads real text when the file already contains it and
- * otherwise falls back to the synthetic transcript for the selected panel.
+ * Deterministic text acquisition, used when the file already contains text and
+ * as the documented fallback when it does not (a PDF, in this prototype).
+ *
+ * This is not OCR and must never be presented as such — the caller labels the
+ * engine that produced the values.
  */
-export async function runSimulatedOcr(
+export async function runDeterministicExtraction(
   file: File,
   category: ReportCategory,
   onProgress?: (event: OcrProgressEvent) => void,

@@ -20,14 +20,17 @@
     "verify:api": "tsx scripts/verify-api.ts",
     "verify:store": "tsx scripts/verify-store.ts",
     "verify:backtest": "tsx scripts/verify-backtest.ts",
-    "diagnose:backtest": "tsx scripts/diagnose-backtest.ts"
+    "diagnose:backtest": "tsx scripts/diagnose-backtest.ts",
+    "verify:ocr": "node scripts/verify-ocr.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "tesseract.js": "^5.1.1"
   },
   "devDependencies": {
+    "@napi-rs/canvas": "^1.0.9",
     "@types/node": "^22.10.2",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
