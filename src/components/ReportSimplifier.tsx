@@ -163,6 +163,180 @@ function VisualBiomarkerBar({
   );
 }
 
+/* ------------------------------------------------------------------ */
+/* Rich Markdown & Clinical Response Renderer                          */
+/* ------------------------------------------------------------------ */
+
+function renderInlineMarkdown(text: string): React.ReactNode[] {
+  const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`)/g);
+  return parts.map((part, idx) => {
+    if (part.startsWith("**") && part.endsWith("**") && part.length >= 4) {
+      return (
+        <strong key={idx} className="font-bold text-ink-950">
+          {part.slice(2, -2)}
+        </strong>
+      );
+    }
+    if (part.startsWith("*") && part.endsWith("*") && part.length >= 2) {
+      return (
+        <em key={idx} className="italic text-ink-700">
+          {part.slice(1, -1)}
+        </em>
+      );
+    }
+    if (part.startsWith("`") && part.endsWith("`") && part.length >= 2) {
+      return (
+        <code key={idx} className="rounded bg-canvas px-1 py-0.5 font-mono text-[11px] text-accent border border-rule-soft">
+          {part.slice(1, -1)}
+        </code>
+      );
+    }
+    return <span key={idx}>{part}</span>;
+  });
+}
+
+export function FormattedAiMessage({ content }: { content: string }) {
+  const rawLines = content.replace(/\r\n/g, "\n").split("\n");
+  const blocks: React.ReactNode[] = [];
+  let currentList: { type: "ul" | "ol"; items: string[] } | null = null;
+
+  const flushList = () => {
+    if (!currentList) return;
+    if (currentList.type === "ul") {
+      blocks.push(
+        <ul key={blocks.length} className="my-2 space-y-1.5 pl-1">
+          {currentList.items.map((item, i) => (
+            <li key={i} className="flex items-start gap-2 text-xs leading-relaxed text-ink-800">
+              <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-accent" />
+              <div className="flex-1">{renderInlineMarkdown(item)}</div>
+            </li>
+          ))}
+        </ul>,
+      );
+    } else {
+      blocks.push(
+        <ol key={blocks.length} className="my-2 space-y-1.5 pl-1">
+          {currentList.items.map((item, i) => (
+            <li key={i} className="flex items-start gap-2 text-xs leading-relaxed text-ink-800">
+              <span className="grid h-4 w-4 shrink-0 place-items-center rounded-full bg-accent-soft text-[10px] font-bold text-accent">
+                {i + 1}
+              </span>
+              <div className="flex-1">{renderInlineMarkdown(item)}</div>
+            </li>
+          ))}
+        </ol>,
+      );
+    }
+    currentList = null;
+  };
+
+  for (let i = 0; i < rawLines.length; i++) {
+    const line = rawLines[i].trim();
+
+    if (!line) {
+      flushList();
+      continue;
+    }
+
+    // Horizontal Divider
+    if (line === "---" || line === "***" || line === "___") {
+      flushList();
+      blocks.push(<hr key={blocks.length} className="my-3 border-rule-soft" />);
+      continue;
+    }
+
+    // Headings
+    if (line.startsWith("### ")) {
+      flushList();
+      blocks.push(
+        <h4 key={blocks.length} className="mt-3.5 mb-1.5 text-xs font-bold text-ink-900 flex items-center gap-1.5 border-b border-rule-soft pb-1">
+          <span className="h-2 w-2 rounded-full bg-accent" />
+          <span>{renderInlineMarkdown(line.slice(4))}</span>
+        </h4>,
+      );
+      continue;
+    }
+    if (line.startsWith("## ")) {
+      flushList();
+      blocks.push(
+        <h3 key={blocks.length} className="mt-4 mb-2 text-sm font-bold text-ink-950 flex items-center gap-2 border-b border-rule pb-1.5">
+          <span className="grid h-5 w-5 place-items-center rounded bg-accent-soft text-accent text-xs">⚡</span>
+          <span>{renderInlineMarkdown(line.slice(3))}</span>
+        </h3>,
+      );
+      continue;
+    }
+    if (line.startsWith("# ")) {
+      flushList();
+      blocks.push(
+        <h2 key={blocks.length} className="mt-4 mb-2 text-base font-bold text-ink-950 border-b border-rule pb-1.5">
+          {renderInlineMarkdown(line.slice(2))}
+        </h2>,
+      );
+      continue;
+    }
+
+    // Unordered List
+    if (line.startsWith("- ") || line.startsWith("* ") || line.startsWith("• ")) {
+      const itemText = line.replace(/^[-*•]\s+/, "");
+      if (!currentList || currentList.type !== "ul") {
+        flushList();
+        currentList = { type: "ul", items: [] };
+      }
+      currentList.items.push(itemText);
+      continue;
+    }
+
+    // Ordered List
+    const matchOrdered = line.match(/^(\d+)\.\s+(.*)/);
+    if (matchOrdered) {
+      const itemText = matchOrdered[2];
+      if (!currentList || currentList.type !== "ol") {
+        flushList();
+        currentList = { type: "ol", items: [] };
+      }
+      currentList.items.push(itemText);
+      continue;
+    }
+
+    // Not a list item, flush any active list
+    flushList();
+
+    // Callout / Warning / Important Note
+    const lower = line.toLowerCase();
+    if (
+      line.startsWith(">") ||
+      lower.startsWith("**important note") ||
+      lower.startsWith("**a gentle reminder") ||
+      lower.startsWith("**a very important reminder") ||
+      lower.startsWith("*a gentle reminder") ||
+      lower.startsWith("⚠️")
+    ) {
+      const cleanLine = line.startsWith(">") ? line.slice(1).trim() : line;
+      blocks.push(
+        <div key={blocks.length} className="my-2.5 rounded-lg border border-amber-300/80 bg-amber-50/70 p-3 text-xs leading-relaxed text-amber-950 shadow-xs">
+          <div className="flex items-start gap-2">
+            <span className="mt-0.5 text-sm shrink-0">⚕️</span>
+            <div className="flex-1 space-y-1">{renderInlineMarkdown(cleanLine)}</div>
+          </div>
+        </div>,
+      );
+      continue;
+    }
+
+    // Standard Paragraph
+    blocks.push(
+      <p key={blocks.length} className="my-1 text-xs leading-relaxed text-ink-800">
+        {renderInlineMarkdown(line)}
+      </p>,
+    );
+  }
+
+  flushList();
+
+  return <div className="space-y-1 text-xs">{blocks}</div>;
+}
+
 export default function ReportSimplifier({
   patientId,
   patient,
@@ -211,6 +385,14 @@ export default function ReportSimplifier({
   const [showKeyModal, setShowKeyModal] = useState(false);
   const [apiKeyInput, setApiKeyInput] = useState(() => getStoredGeminiApiKey());
   const [hasGeminiKey, setHasGeminiKey] = useState(() => Boolean(getStoredGeminiApiKey()));
+  const [copiedMsgIdx, setCopiedMsgIdx] = useState<number | null>(null);
+  const chatEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (activeAiTab === "chat" && chatMessages.length > 0) {
+      chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [chatMessages, chatLoading, activeAiTab]);
 
   useEffect(() => {
     if (selected) {
@@ -987,6 +1169,23 @@ export default function ReportSimplifier({
                     </div>
                   </div>
 
+                  {/* Patient Advisory & Clinical Review Notice */}
+                  <div className="rounded-xl border border-amber-300 bg-amber-50/90 p-3.5 sm:p-4 text-xs text-amber-900 shadow-xs">
+                    <div className="flex items-start gap-2.5">
+                      <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-amber-200 text-amber-900 mt-0.5">
+                        <Icon name="alert" size={14} />
+                      </span>
+                      <div className="space-y-1">
+                        <p className="font-bold text-amber-950 flex items-center gap-1.5 text-xs sm:text-sm">
+                          Important Note for Patients: For Educational Reference Only
+                        </p>
+                        <p className="leading-relaxed text-amber-900 text-[11px] sm:text-xs">
+                          The interpretations, summaries, and organ evaluations provided by this AI engine are designed to help you understand complex medical terminology. <strong>Do not make medical decisions, stop medications, or self-treat based on AI responses alone.</strong> Always review and verify your complete laboratory results with your doctor or qualified healthcare provider for official clinical diagnosis and care.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
                   {/* Interpretation Tabs (Interactive on screen) */}
                   <div className="no-print flex flex-wrap items-center gap-1.5 border-b border-rule-soft pb-2">
                     <button
@@ -1068,9 +1267,7 @@ export default function ReportSimplifier({
                         <div className="flex items-center gap-2 mb-1.5 font-bold text-ink-900">
                           <span>{aiAnalysis?.overallHealthHeadline}</span>
                         </div>
-                        <p className="whitespace-pre-line text-ink-700">
-                          {aiAnalysis?.executiveSummary}
-                        </p>
+                        <FormattedAiMessage content={aiAnalysis?.executiveSummary ?? ""} />
                       </div>
 
                       {/* Correlated Patterns */}
@@ -1276,35 +1473,71 @@ export default function ReportSimplifier({
                       </div>
 
                       {/* Chat Message History */}
-                      <div className="max-h-60 overflow-y-auto rounded-lg border border-rule-soft bg-canvas/50 p-3 space-y-2.5">
+                      <div className="max-h-[520px] min-h-[200px] overflow-y-auto rounded-xl border border-rule-soft bg-canvas/40 p-3 sm:p-4 space-y-3">
                         {chatMessages.length === 0 ? (
-                          <p className="text-center py-4 text-xs text-ink-400">
-                            No questions asked yet. Pick a prompt above or type your question below!
-                          </p>
+                          <div className="text-center py-8 space-y-2">
+                            <span className="grid h-10 w-10 place-items-center rounded-full bg-accent-soft text-accent mx-auto text-lg">
+                              💬
+                            </span>
+                            <p className="text-xs font-semibold text-ink-800">
+                              Ask any question about {patient?.name ? `${patient.name}'s` : "your"} lab report
+                            </p>
+                            <p className="text-[11px] text-ink-500 max-w-sm mx-auto">
+                              Pick a prompt above or type freely to get personalized food advice, workout safety pointers, or doctor questions.
+                            </p>
+                          </div>
                         ) : (
-                          chatMessages.map((msg, mIdx) => (
-                            <div
-                              key={mIdx}
-                              className={cx(
-                                "flex flex-col text-xs leading-relaxed max-w-[88%] rounded-xl p-3",
-                                msg.role === "user"
-                                  ? "ml-auto bg-accent text-white rounded-br-none"
-                                  : "mr-auto bg-paper border border-rule text-ink-800 rounded-bl-none shadow-xs",
-                              )}
-                            >
-                              <span className="font-semibold text-[10px] opacity-75 mb-1">
-                                {msg.role === "user" ? "You" : "SmartMedic Clinical AI"} · {msg.time}
-                              </span>
-                              <p className="whitespace-pre-line">{msg.text}</p>
-                            </div>
-                          ))
+                          chatMessages.map((msg, mIdx) => {
+                            const isUser = msg.role === "user";
+                            const isCopied = copiedMsgIdx === mIdx;
+
+                            return (
+                              <div
+                                key={mIdx}
+                                className={cx(
+                                  "flex flex-col text-xs leading-relaxed max-w-[94%] sm:max-w-[88%] rounded-2xl p-3.5 transition",
+                                  isUser
+                                    ? "ml-auto bg-accent text-white rounded-br-none shadow-xs"
+                                    : "mr-auto bg-paper border border-rule/80 text-ink-900 rounded-bl-none shadow-xs space-y-1.5",
+                                )}
+                              >
+                                <div className="flex items-center justify-between gap-2 border-b border-white/20 pb-1 mb-1">
+                                  <span className={cx("font-semibold text-[10px]", isUser ? "text-white/80" : "text-ink-500")}>
+                                    {isUser ? "You" : "SmartMedic Clinical AI"} · {msg.time}
+                                  </span>
+                                  {!isUser ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        void navigator.clipboard.writeText(msg.text);
+                                        setCopiedMsgIdx(mIdx);
+                                        setTimeout(() => setCopiedMsgIdx(null), 2000);
+                                      }}
+                                      className="text-[10px] text-ink-400 hover:text-accent flex items-center gap-1 transition"
+                                      title="Copy message"
+                                    >
+                                      <Icon name={isCopied ? "check" : "download"} size={11} />
+                                      <span>{isCopied ? "Copied" : "Copy"}</span>
+                                    </button>
+                                  ) : null}
+                                </div>
+
+                                {isUser ? (
+                                  <p className="whitespace-pre-line font-medium text-white">{msg.text}</p>
+                                ) : (
+                                  <FormattedAiMessage content={msg.text} />
+                                )}
+                              </div>
+                            );
+                          })
                         )}
                         {chatLoading ? (
-                          <div className="mr-auto bg-paper border border-rule text-ink-600 rounded-xl p-3 text-xs flex items-center gap-2">
-                            <span className="animate-spin text-accent">⚡</span>
-                            <span>SmartMedic AI is reviewing your report...</span>
+                          <div className="mr-auto bg-paper border border-rule text-ink-700 rounded-2xl p-3 text-xs flex items-center gap-2.5 shadow-xs animate-pulse">
+                            <span className="animate-spin text-accent text-sm">⚡</span>
+                            <span className="font-medium">SmartMedic AI is consulting clinical knowledge & lab values...</span>
                           </div>
                         ) : null}
+                        <div ref={chatEndRef} />
                       </div>
 
                       {/* Input Box */}
@@ -1313,19 +1546,38 @@ export default function ReportSimplifier({
                           e.preventDefault();
                           void handleAskQuestion();
                         }}
-                        className="flex items-center gap-2"
+                        className="space-y-1.5"
                       >
-                        <input
-                          type="text"
-                          value={chatInput}
-                          onChange={(e) => setChatInput(e.target.value)}
-                          placeholder="e.g. What does my fasting glucose mean? What should I ask my doctor?"
-                          className="flex-1 rounded-lg border border-rule bg-paper px-3 py-2 text-xs text-ink-900 placeholder:text-ink-400 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
-                        />
-                        <Button type="submit" size="sm" variant="primary" disabled={!chatInput.trim() || chatLoading}>
-                          <Icon name="bolt" size={13} />
-                          Ask AI
-                        </Button>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="text"
+                            value={chatInput}
+                            onChange={(e) => setChatInput(e.target.value)}
+                            placeholder="e.g. What does my fasting glucose mean? What foods should I eat?"
+                            className="flex-1 rounded-lg border border-rule bg-paper px-3 py-2 text-xs text-ink-900 placeholder:text-ink-400 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+                          />
+                          <Button type="submit" size="sm" variant="primary" disabled={!chatInput.trim() || chatLoading}>
+                            <Icon name="bolt" size={13} />
+                            Ask AI
+                          </Button>
+                          {chatMessages.length > 0 ? (
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => setChatMessages([])}
+                              title="Clear conversation"
+                            >
+                              Clear
+                            </Button>
+                          ) : null}
+                        </div>
+                        <p className="text-[10px] text-ink-400 flex items-center gap-1">
+                          <span>⚕️</span>
+                          <span>
+                            <strong>Note:</strong> AI answers provide educational information. Never adjust prescriptions or treatments without your doctor's confirmation.
+                          </span>
+                        </p>
                       </form>
                     </div>
                   )}

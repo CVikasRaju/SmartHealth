@@ -125,6 +125,17 @@ export async function generateAiReportAnalysis(
 /**
  * Answers a free-form patient question about their medical report using AI.
  */
+export const OPENROUTER_FREE_MODELS = [
+  "google/gemini-2.0-flash-001",
+  "google/gemini-2.0-flash-lite-preview-02-05:free",
+  "meta-llama/llama-3.3-70b-instruct:free",
+  "meta-llama/llama-3.1-8b-instruct:free",
+  "deepseek/deepseek-chat:free",
+  "mistralai/mistral-small-24b-instruct-2501:free",
+  "openrouter/auto",
+  "google/gemini-2.0-flash-exp:free",
+];
+
 export async function askAiAboutReport(
   question: string,
   report: MedicalReport,
@@ -143,9 +154,10 @@ export async function askAiAboutReport(
         if (answer) return answer;
       }
     } catch (err) {
-      console.warn(`${provider} Chat failed, falling back to local conversational Q&A:`, err);
+      console.warn(`${provider} Chat request failed:`, err);
+      const errMsg = err instanceof Error ? err.message : String(err);
       const local = synthesizeLocalAnswer(question, report, patient);
-      return `${local}\n\n*(Note: Live ${provider === "openrouter" ? "OpenRouter" : "Gemini"} API request had an issue; responded via built-in SmartMedic Clinical Intelligence.)*`;
+      return `⚠️ **Live AI Connection Notice:** Could not complete request via ${provider === "openrouter" ? "OpenRouter" : "Gemini"} API (\`${errMsg}\`).\n\n*SmartMedic Built-in Clinical Intelligence Response:*\n\n${local}`;
     }
   }
 
@@ -153,7 +165,7 @@ export async function askAiAboutReport(
 }
 
 /* ------------------------------------------------------------------ */
-/* OpenRouter API Integration                                         */
+/* OpenRouter API Integration with Multi-Model Failover                */
 /* ------------------------------------------------------------------ */
 
 async function callOpenRouterReportAnalysis(
@@ -197,41 +209,58 @@ ${fields
   .join("\n")}`;
 
   const origin = typeof window !== "undefined" ? window.location.origin : "http://localhost:5173";
+  let lastError = "";
 
-  const resp = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${apiKey}`,
-      "HTTP-Referer": origin,
-      "X-Title": "SmartMedic Health AI",
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      // Uses OpenRouter's free high-quality models
-      model: "google/gemini-2.0-flash-exp:free",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
-      ],
-      temperature: 0.2,
-      response_format: { type: "json_object" },
-    }),
-  });
+  for (const modelName of OPENROUTER_FREE_MODELS) {
+    try {
+      const resp = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "HTTP-Referer": origin,
+          "X-Title": "SmartMedic Health AI",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: modelName,
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt },
+          ],
+          temperature: 0.2,
+          response_format: { type: "json_object" },
+        }),
+      });
 
-  if (!resp.ok) {
-    const errText = await resp.text().catch(() => "");
-    throw new Error(`OpenRouter API error (${resp.status}): ${errText || resp.statusText}`);
+      if (resp.status === 401) {
+        throw new Error("Invalid OpenRouter API Key (401 Unauthorized). Please check your key at openrouter.ai/keys.");
+      }
+
+      if (!resp.ok) {
+        const errText = await resp.text().catch(() => "");
+        lastError = `OpenRouter (${modelName}) HTTP ${resp.status}: ${errText || resp.statusText}`;
+        continue; // Try next model candidate
+      }
+
+      const json = await resp.json();
+      const rawText = json.choices?.[0]?.message?.content;
+      if (!rawText) continue;
+
+      const cleaned = rawText.replace(/```json/gi, "").replace(/```/g, "").trim();
+      const parsed = JSON.parse(cleaned) as AiReportAnalysis;
+      parsed.generatedAt = new Date().toISOString();
+      parsed.modelUsed = `OpenRouter (${modelName})`;
+      return parsed;
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.includes("401") || msg.includes("Invalid OpenRouter API Key")) {
+        throw err;
+      }
+      lastError = msg;
+    }
   }
 
-  const json = await resp.json();
-  const rawText = json.choices?.[0]?.message?.content;
-  if (!rawText) return null;
-
-  const cleaned = rawText.replace(/```json/gi, "").replace(/```/g, "").trim();
-  const parsed = JSON.parse(cleaned) as AiReportAnalysis;
-  parsed.generatedAt = new Date().toISOString();
-  parsed.modelUsed = `OpenRouter (${json.model || "Gemini 2.0 Flash / Free Tier"})`;
-  return parsed;
+  throw new Error(lastError || "All OpenRouter models failed to respond.");
 }
 
 async function callOpenRouterReportChat(
@@ -242,7 +271,7 @@ async function callOpenRouterReportChat(
 ): Promise<string | null> {
   const fields = report.extractedFields ?? [];
   const systemPrompt = `You are SmartMedic AI, a friendly, highly knowledgeable, and empathetic medical educator.
-You are chatting with ${patient?.name ?? "a patient"} to explain their laboratory report.
+You are chatting with ${patient?.name ?? "a patient"} to answer their exact questions about their laboratory report.
 
 PATIENT'S LAB REPORT DATA:
 Document: ${report.fileName} (${report.reportCategory.replace("_", " ")})
@@ -251,42 +280,60 @@ ${fields
   .map((f) => `- ${f.testName}: ${f.value} ${f.unit} (Normal: ${f.referenceRange.text}, Status: ${f.status})`)
   .join("\n")}
 
-USER'S MESSAGE: "${question}"
-
 INSTRUCTIONS:
-1. If the user says a greeting (like 'hello', 'hi', 'hey'), greet them warmly by name (${patient?.name ?? "there"}), briefly mention what report you have open, and ask what specific test, diet, or lifestyle question they'd like help with.
-2. If they ask about a specific biomarker (e.g. glucose, creatinine, SGPT, cholesterol), explain that specific value from their report, what it measures, and what everyday factors can influence it.
-3. If they ask about diet or exercise, give tailored, safe, practical nutritional tips matching their results.
-4. Keep the tone warm, conversational, human, and clear. Avoid robotic medical jargon.
-5. Do not diagnose or prescribe; remind them their doctor provides definitive clinical care.`;
+1. Answer the user's exact specific question directly and thoughtfully.
+2. If they ask a general question (e.g. "what is food", "what is a liver enzyme", "how does fasting work"), explain the underlying physiological science clearly in everyday terms and link it to the biomarkers in their report.
+3. If they ask about a specific biomarker (e.g. glucose, creatinine, SGPT, cholesterol), explain that specific value from their report, what it measures, and what everyday factors can influence it.
+4. If they ask about diet or exercise, give tailored, safe, practical nutritional tips matching their results.
+5. Keep the tone warm, conversational, human, and clear. Avoid robotic medical jargon.
+6. Emphasize that this AI output is strictly for informational and educational purposes. Do not diagnose, prescribe, or suggest changing medications. Always remind the patient to review and verify all laboratory findings with their attending doctor or physician.`;
 
   const origin = typeof window !== "undefined" ? window.location.origin : "http://localhost:5173";
+  let lastError = "";
 
-  const resp = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${apiKey}`,
-      "HTTP-Referer": origin,
-      "X-Title": "SmartMedic Health AI",
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: "google/gemini-2.0-flash-exp:free",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: question },
-      ],
-      temperature: 0.3,
-    }),
-  });
+  for (const modelName of OPENROUTER_FREE_MODELS) {
+    try {
+      const resp = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "HTTP-Referer": origin,
+          "X-Title": "SmartMedic Health AI",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: modelName,
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: question },
+          ],
+          temperature: 0.3,
+        }),
+      });
 
-  if (!resp.ok) {
-    const errText = await resp.text().catch(() => "");
-    throw new Error(`OpenRouter Chat error (${resp.status}): ${errText || resp.statusText}`);
+      if (resp.status === 401) {
+        throw new Error("Invalid OpenRouter API Key (401 Unauthorized). Please check your key at openrouter.ai/keys.");
+      }
+
+      if (!resp.ok) {
+        const errText = await resp.text().catch(() => "");
+        lastError = `OpenRouter (${modelName}) HTTP ${resp.status}: ${errText || resp.statusText}`;
+        continue;
+      }
+
+      const json = await resp.json();
+      const content = json.choices?.[0]?.message?.content;
+      if (content) return content;
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.includes("401") || msg.includes("Invalid OpenRouter API Key")) {
+        throw err;
+      }
+      lastError = msg;
+    }
   }
 
-  const json = await resp.json();
-  return json.choices?.[0]?.message?.content ?? null;
+  throw new Error(lastError || "All OpenRouter models failed to respond.");
 }
 
 /* ------------------------------------------------------------------ */
@@ -389,7 +436,7 @@ INSTRUCTIONS:
 2. If they ask about a specific biomarker (e.g. glucose, creatinine, SGPT, cholesterol), explain that specific value from their report, what it measures, and what everyday factors can influence it.
 3. If they ask about diet or exercise, give tailored, safe, practical nutritional tips matching their results.
 4. Keep the tone warm, conversational, human, and clear. Avoid robotic medical jargon.
-5. Do not diagnose or prescribe; remind them their doctor provides definitive clinical care.`;
+5. Emphasize that this AI output is strictly for informational and educational purposes. Do not diagnose, prescribe, or suggest changing medications. Always remind the patient to review and verify all laboratory findings with their attending doctor or physician.`;
 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
   const resp = await fetch(url, {
@@ -930,9 +977,28 @@ function synthesizeLocalAnswer(
     return text;
   }
 
-  // 7. Diet / Foods / Nutrition
-  if (q.includes("eat") || q.includes("diet") || q.includes("food") || q.includes("fruit") || q.includes("nutrition")) {
-    return `### Nutrition Guidance Based on Your Lab Results\n\n1. **Whole Foods First:** Emphasize leafy greens, seasonal vegetables, legumes, and whole grains.\n2. **Hydration:** Aim for 2 to 2.5 liters of clean water daily to assist renal waste filtration.\n3. **Refined Sugars:** Minimize soda, sweets, packaged juices, and refined white flour pastries.\n4. **Healthy Fats:** Choose handfuls of almonds, walnuts, and healthy cooking oils over trans-fat deep-fried snacks.\n\n*Be sure to share your dietary goals with your doctor or clinical dietitian for a personalized meal plan.*`;
+  // 7. Diet / Foods / Nutrition vs Definitions
+  if (
+    q === "what is food" ||
+    q.startsWith("what is food") ||
+    q.startsWith("define food") ||
+    q.includes("meaning of food") ||
+    q.includes("what is nutrition")
+  ) {
+    return `### What Is Food & How It Relates to Your Lab Results\n\n**Food** refers to any nourishing substance containing essential macronutrients (**carbohydrates, proteins, fats**) and micronutrients (**vitamins, minerals, water**) that your body absorbs and metabolizes to produce energy, build tissues, and sustain vital life functions.\n\nIn relation to your **${report.fileName}**:\n• **Carbohydrates:** Converted to glucose; directly impacts your Fasting Blood Sugar and HbA1c.\n• **Fats & Lipids:** Fuel cellular membranes and hormone production; reflected in Total Cholesterol, LDL, and Triglycerides.\n• **Proteins & Nitrogen:** Essential for muscle repair; filtered by your kidneys and reflected in Serum Creatinine and Blood Urea.\n\n*Would you like specific dietary recommendations tailored to your lab numbers?*`;
+  }
+
+  if (
+    q.includes("what should i eat") ||
+    q.includes("what to eat") ||
+    q.includes("diet plan") ||
+    q.includes("foods to avoid") ||
+    q.includes("what foods") ||
+    q.includes("meal plan") ||
+    q.includes("nutrition tips") ||
+    q.includes("healthy food")
+  ) {
+    return `### Nutrition Guidance Based on Your Lab Results\n\nBased on your **${fields.length} biomarkers** (${abnormal.length} markers for discussion):\n\n1. **Whole Foods First:** Emphasize leafy greens, seasonal vegetables, legumes, and whole grains.\n2. **Hydration:** Aim for 2 to 2.5 liters of clean water daily to assist renal waste filtration.\n3. **Refined Sugars:** Minimize soda, sweets, packaged juices, and refined white flour pastries.\n4. **Healthy Fats:** Choose handfuls of almonds, walnuts, and healthy cooking oils over trans-fat deep-fried snacks.\n\n*Be sure to share your dietary goals with your doctor or clinical dietitian for a personalized meal plan.*`;
   }
 
   // 8. Exercise / Workout / Gym
@@ -959,5 +1025,5 @@ function synthesizeLocalAnswer(
   }
 
   // 12. General Conversational Response
-  return `Regarding your question: "${question}"\n\nIn this ${report.fileName} report, we have **${fields.length} biomarkers** analyzed (**${fields.length - abnormal.length} within normal target**, **${abnormal.length} for discussion**).\n\nIf you have a specific biomarker in mind (like Blood Sugar, Creatinine, Liver enzymes, or Cholesterol) or want food/exercise guidance, please let me know! You can also connect an OpenRouter or Gemini API key to enable live conversational reasoning.`;
+  return `Regarding your question: "${question}"\n\nIn this ${report.fileName} report, we have **${fields.length} biomarkers** analyzed (**${fields.length - abnormal.length} within normal target**, **${abnormal.length} for discussion**).\n\nIf you have a specific biomarker in mind (like Blood Sugar, Creatinine, Liver enzymes, or Cholesterol) or want food/exercise guidance, please let me know!\n\n*Note: AI interpretations are for informational understanding only. Always review your laboratory report with your doctor.*`;
 }
