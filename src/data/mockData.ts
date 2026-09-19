@@ -65,7 +65,7 @@ export function isoDaysAhead(days: number, hour = 9, minute = 0): string {
  * Deterministic 32-bit PRNG (mulberry32). Chosen because it is tiny, dependency
  * free, and produces the same stream for the same seed on every machine.
  */
-function createRandom(seed: number): () => number {
+export function createRandom(seed: number): () => number {
   let state = seed >>> 0;
   return () => {
     state = (state + 0x6d2b79f5) >>> 0;
@@ -75,7 +75,7 @@ function createRandom(seed: number): () => number {
   };
 }
 
-interface ConsumptionProfile {
+export interface ConsumptionProfile {
   seed: number;
   /** Typical daily dispense count at the start of the window. */
   baseline: number;
@@ -93,7 +93,7 @@ interface ConsumptionProfile {
  * which the EWMA naturally smooths out, and an optional surge window models an
  * infection wave hitting the formulary.
  */
-function buildConsumption({ seed, baseline, drift, jitter, surge, days = 30 }: ConsumptionProfile): number[] {
+export function buildConsumption({ seed, baseline, drift, jitter, surge, days = 30 }: ConsumptionProfile): number[] {
   const random = createRandom(seed);
   const series: number[] = [];
 
