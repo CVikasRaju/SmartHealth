@@ -45,12 +45,12 @@ function PatientHeader() {
     <Panel>
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h2 className="text-lg font-semibold tracking-tight text-white">{patient.name}</h2>
-          <p className="mt-0.5 text-xs text-slate-400">
+          <h2 className="text-lg font-semibold tracking-tight text-ink-900">{patient.name}</h2>
+          <p className="mt-0.5 text-xs text-ink-500">
             {patient.mrn} · born {formatDate(patient.dob)} ({ageFromDob(patient.dob)} years) · {patient.gender} · blood
             group {patient.bloodGroup}
           </p>
-          <p className="mt-1 text-[11px] text-slate-500">
+          <p className="mt-1 text-[11px] text-ink-400">
             Registered {formatDate(patient.registeredAt)} · {reports.length} report
             {reports.length === 1 ? "" : "s"} on file
           </p>
@@ -65,34 +65,34 @@ function PatientHeader() {
       </div>
 
       <div className="mt-4 grid gap-3 sm:grid-cols-3">
-        <div className="rounded-lg border border-white/10 bg-white/[0.02] p-3">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">Conditions on record</p>
+        <div className="rounded-lg border border-rule bg-paper p-3">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-500">Conditions on record</p>
           <ul className="mt-2 space-y-1">
             {patient.chronicConditions.length === 0 ? (
-              <li className="text-xs text-slate-400">None recorded.</li>
+              <li className="text-xs text-ink-500">None recorded.</li>
             ) : (
               patient.chronicConditions.map((condition) => (
-                <li key={condition} className="text-xs text-slate-300">
+                <li key={condition} className="text-xs text-ink-700">
                   {condition}
                 </li>
               ))
             )}
           </ul>
         </div>
-        <div className="rounded-lg border border-white/10 bg-white/[0.02] p-3">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+        <div className="rounded-lg border border-rule bg-paper p-3">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-500">
             Values worth discussing
           </p>
           {outOfRange.length === 0 ? (
-            <p className="mt-2 text-xs text-emerald-300">
+            <p className="mt-2 text-xs text-risk-normal">
               Every recognised value currently sits inside its reference range.
             </p>
           ) : (
             <ul className="mt-2 space-y-1">
               {outOfRange.slice(0, 4).map((trend) => (
                 <li key={trend.normalizedKey} className="flex items-center justify-between gap-2 text-xs">
-                  <span className="truncate text-slate-300">{trend.testName}</span>
-                  <span className="shrink-0 tabular-nums text-slate-200">
+                  <span className="truncate text-ink-700">{trend.testName}</span>
+                  <span className="shrink-0 tabular-nums text-ink-900">
                     {formatNumber(trend.latest, trend.latest % 1 === 0 ? 0 : 1)} {trend.unit}
                   </span>
                 </li>
@@ -100,13 +100,13 @@ function PatientHeader() {
             </ul>
           )}
         </div>
-        <div className="rounded-lg border border-white/10 bg-white/[0.02] p-3">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">Emergency contact</p>
-          <p className="mt-2 text-xs text-slate-300">{patient.emergencyContact.name}</p>
-          <p className="text-[11px] text-slate-500">
+        <div className="rounded-lg border border-rule bg-paper p-3">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-500">Emergency contact</p>
+          <p className="mt-2 text-xs text-ink-700">{patient.emergencyContact.name}</p>
+          <p className="text-[11px] text-ink-400">
             {patient.emergencyContact.relation} · {patient.emergencyContact.contact}
           </p>
-          <p className="mt-2 text-[11px] text-slate-500">{patient.contact}</p>
+          <p className="mt-2 text-[11px] text-ink-400">{patient.contact}</p>
         </div>
       </div>
     </Panel>
@@ -157,9 +157,9 @@ function MyReports() {
                 "The summary explains what a test measures. Only your doctor can interpret what the result means for you.",
             },
           ].map((step) => (
-            <div key={step.title} className="rounded-lg border border-white/10 bg-white/[0.02] p-3">
-              <p className="text-xs font-semibold text-slate-100">{step.title}</p>
-              <p className="mt-1 text-[11px] leading-relaxed text-slate-400">{step.body}</p>
+            <div key={step.title} className="rounded-lg border border-rule bg-paper p-3">
+              <p className="text-xs font-semibold text-ink-900">{step.title}</p>
+              <p className="mt-1 text-[11px] leading-relaxed text-ink-500">{step.body}</p>
             </div>
           ))}
         </div>
@@ -262,11 +262,11 @@ function HealthTrends() {
                 const token = BIOMARKER_STATUS_TOKENS[trend.status];
                 const inRange = !isOutOfRange(trend.status);
                 return (
-                  <li key={trend.normalizedKey} className="rounded-lg border border-white/10 bg-white/[0.02] p-3">
+                  <li key={trend.normalizedKey} className="rounded-lg border border-rule bg-paper p-3">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <span className="flex items-center gap-2">
                         <span className="h-2 w-2 rounded-full" style={{ background: token.hex }} />
-                        <span className="text-xs font-semibold text-slate-100">{trend.testName}</span>
+                        <span className="text-xs font-semibold text-ink-900">{trend.testName}</span>
                         <Chip token={token} />
                       </span>
                       <span className="flex items-center gap-3 text-xs">
@@ -275,10 +275,10 @@ function HealthTrends() {
                             className={cx(
                               "inline-flex items-center gap-1",
                               trend.direction === "stable"
-                                ? "text-slate-400"
+                                ? "text-ink-500"
                                 : trend.direction === "rising"
-                                  ? "text-orange-300"
-                                  : "text-sky-300",
+                                  ? "text-risk-high"
+                                  : "text-accent",
                             )}
                           >
                             <Icon
@@ -289,11 +289,11 @@ function HealthTrends() {
                             {trend.direction}
                           </span>
                         ) : (
-                          <span className="text-slate-500">first reading</span>
+                          <span className="text-ink-400">first reading</span>
                         )}
-                        <span className="font-semibold tabular-nums text-white">
+                        <span className="font-semibold tabular-nums text-ink-900">
                           {formatNumber(trend.latest, trend.latest % 1 === 0 ? 0 : 2)}
-                          <span className="ml-1 text-[10px] font-normal text-slate-400">{trend.unit}</span>
+                          <span className="ml-1 text-[10px] font-normal text-ink-500">{trend.unit}</span>
                         </span>
                       </span>
                     </div>
@@ -317,7 +317,7 @@ function HealthTrends() {
                       emptyMessage="A single reading needs a second test before a trend can be drawn."
                       ariaLabel={`${trend.testName} trend`}
                     />
-                    <p className="mt-2 text-[11px] leading-relaxed text-slate-400">
+                    <p className="mt-2 text-[11px] leading-relaxed text-ink-500">
                       Reference range {trend.referenceRange.text}. {describeTrend(trend)}
                     </p>
                   </li>
@@ -348,7 +348,7 @@ function HealthTrends() {
                 { label: "Reports contributing", value: String(derived.reportsFor(patient.id).length) },
               ]}
             />
-            <p className="mt-4 rounded-lg border border-amber-400/30 bg-amber-500/[0.08] p-3 text-[11px] leading-relaxed text-amber-100">
+            <p className="mt-4 rounded-lg border border-risk-moderate/50 bg-risk-moderate/[0.08] p-3 text-[11px] leading-relaxed text-risk-moderate">
               {MEDICAL_DISCLAIMER}
             </p>
           </Panel>
@@ -410,17 +410,17 @@ function MyAppointments() {
               {upcoming.map((appointment) => {
                 const doctor = derived.staffById.get(appointment.doctorId);
                 return (
-                  <li key={appointment.id} className="rounded-lg border border-white/10 bg-white/[0.02] p-3">
+                  <li key={appointment.id} className="rounded-lg border border-rule bg-paper p-3">
                     <div className="flex flex-wrap items-center justify-between gap-2">
-                      <p className="text-xs font-semibold text-slate-100">{appointment.reason}</p>
+                      <p className="text-xs font-semibold text-ink-900">{appointment.reason}</p>
                       <Chip token={APPOINTMENT_STATUS_TOKENS[appointment.status]} />
                     </div>
-                    <p className="mt-1 text-[11px] text-slate-400">
+                    <p className="mt-1 text-[11px] text-ink-500">
                       {formatDateTime(appointment.scheduledFor)} · {doctor?.fullName ?? "—"} ·{" "}
                       {appointment.department}
                     </p>
                     {appointment.triageNotes ? (
-                      <p className="mt-1 text-[11px] text-slate-500">{appointment.triageNotes}</p>
+                      <p className="mt-1 text-[11px] text-ink-400">{appointment.triageNotes}</p>
                     ) : null}
                     {appointment.queuePosition !== null ? (
                       <p className="mt-1 text-[11px] text-accent">
@@ -483,7 +483,7 @@ function MyAppointments() {
               Request appointment
             </Button>
             {booked ? (
-              <p className="text-[11px] text-emerald-300">
+              <p className="text-[11px] text-risk-normal">
                 Request submitted. The front desk will confirm your slot.
               </p>
             ) : null}
@@ -500,20 +500,20 @@ function MyAppointments() {
             {treatments.map((treatment) => {
               const doctor = derived.staffById.get(treatment.doctorId);
               return (
-                <li key={treatment.id} className="rounded-lg border border-white/10 bg-white/[0.02] p-3">
+                <li key={treatment.id} className="rounded-lg border border-rule bg-paper p-3">
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <p className="text-xs font-semibold text-slate-100">{treatment.diagnosis}</p>
-                    <span className="text-[11px] text-slate-500">
+                    <p className="text-xs font-semibold text-ink-900">{treatment.diagnosis}</p>
+                    <span className="text-[11px] text-ink-400">
                       {formatDate(treatment.createdAt)} · {doctor?.fullName ?? "—"}
                     </span>
                   </div>
                   <ul className="mt-2 space-y-1.5">
                     {treatment.prescriptions.map((line) => (
                       <li key={line.id} className="flex flex-wrap items-center justify-between gap-2 text-[11px]">
-                        <span className="text-slate-300">
+                        <span className="text-ink-700">
                           {line.drugName} · {line.dosage} · {line.frequency.replace(/_/g, " ")}
                         </span>
-                        <span className="text-slate-500">
+                        <span className="text-ink-400">
                           {line.quantity} {line.durationDays} day course
                           {line.substituteFor ? " · substituted for safety" : ""}
                         </span>
@@ -521,7 +521,7 @@ function MyAppointments() {
                     ))}
                   </ul>
                   {treatment.prescriptions.some((line) => line.stockAdvisory) ? (
-                    <p className="mt-2 text-[10px] leading-relaxed text-slate-500">
+                    <p className="mt-2 text-[10px] leading-relaxed text-ink-400">
                       {treatment.prescriptions.find((line) => line.stockAdvisory)?.stockAdvisory}
                     </p>
                   ) : null}
@@ -541,10 +541,10 @@ function MyAppointments() {
             {past.map((appointment) => {
               const doctor = derived.staffById.get(appointment.doctorId);
               return (
-                <li key={appointment.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-white/10 bg-white/[0.02] p-3">
+                <li key={appointment.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-rule bg-paper p-3">
                   <span className="min-w-0">
-                    <span className="block text-xs text-slate-200">{appointment.reason}</span>
-                    <span className="block text-[11px] text-slate-500">
+                    <span className="block text-xs text-ink-900">{appointment.reason}</span>
+                    <span className="block text-[11px] text-ink-400">
                       {formatDateTime(appointment.scheduledFor)} · {doctor?.fullName ?? "—"}
                     </span>
                   </span>
@@ -556,7 +556,7 @@ function MyAppointments() {
         )}
       </Panel>
 
-      <p className="rounded-lg border border-amber-400/30 bg-amber-500/[0.08] p-3 text-[11px] leading-relaxed text-amber-100">
+      <p className="rounded-lg border border-risk-moderate/50 bg-risk-moderate/[0.08] p-3 text-[11px] leading-relaxed text-risk-moderate">
         {MEDICAL_DISCLAIMER}
       </p>
     </div>

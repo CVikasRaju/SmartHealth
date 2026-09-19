@@ -4,12 +4,15 @@
  * Small, unopinionated building blocks used by every portal: surfaces, chips,
  * form controls, stat tiles, and a modal. Keeping them here means the clinical
  * and financial screens share one visual language without a component library.
+ *
+ * The styling follows a printed-record convention: white sheets, hairline
+ * rules, squared corners, and no glow or blur effects anywhere.
  */
 
 import type { ChangeEvent, ReactNode } from "react";
 import { useEffect } from "react";
 import { cx } from "@/utils/format";
-import type { Token } from "@/ui/theme";
+import { CHART_PRIMARY, type Token } from "@/ui/theme";
 
 /* ------------------------------------------------------------------ */
 /* Surfaces                                                            */
@@ -24,7 +27,7 @@ export function Panel({
   className?: string;
   padded?: boolean;
 }) {
-  return <section className={cx("sm-panel", padded && "p-5", className)}>{children}</section>;
+  return <section className={cx("sm-panel", padded && "p-4", className)}>{children}</section>;
 }
 
 export function PanelHeader({
@@ -41,12 +44,12 @@ export function PanelHeader({
   className?: string;
 }) {
   return (
-    <header className={cx("mb-4 flex items-start justify-between gap-4", className)}>
-      <div className="flex min-w-0 items-start gap-3">
-        {icon ? <span className="mt-0.5 text-accent">{icon}</span> : null}
+    <header className={cx("mb-3.5 flex items-start justify-between gap-4 border-b border-rule-soft pb-3", className)}>
+      <div className="flex min-w-0 items-start gap-2.5">
+        {icon ? <span className="mt-0.5 text-ink-400">{icon}</span> : null}
         <div className="min-w-0">
-          <h2 className="text-sm font-semibold tracking-tight text-white">{title}</h2>
-          {subtitle ? <p className="mt-0.5 text-xs leading-relaxed text-slate-400">{subtitle}</p> : null}
+          <h2 className="text-[15px] leading-snug">{title}</h2>
+          {subtitle ? <p className="mt-1 text-xs leading-relaxed text-ink-500">{subtitle}</p> : null}
         </div>
       </div>
       {actions ? <div className="flex shrink-0 items-center gap-2">{actions}</div> : null}
@@ -56,9 +59,9 @@ export function PanelHeader({
 
 export function SectionTitle({ children, hint }: { children: ReactNode; hint?: ReactNode }) {
   return (
-    <div className="mb-3 flex items-baseline gap-2">
-      <h3 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">{children}</h3>
-      {hint ? <span className="text-[11px] text-slate-500">{hint}</span> : null}
+    <div className="mb-2.5 flex items-baseline gap-2">
+      <h3 className="sm-eyebrow text-ink-500">{children}</h3>
+      {hint ? <span className="text-[11px] text-ink-400">{hint}</span> : null}
     </div>
   );
 }
@@ -75,9 +78,9 @@ export function EmptyState({
   className?: string;
 }) {
   return (
-    <div className={cx("rounded-lg border border-dashed border-white/10 px-5 py-8 text-center", className)}>
-      <p className="text-sm font-medium text-slate-300">{title}</p>
-      {description ? <p className="mx-auto mt-1 max-w-md text-xs leading-relaxed text-slate-500">{description}</p> : null}
+    <div className={cx("border border-dashed border-rule-strong bg-paper-tint px-5 py-8 text-center", className)}>
+      <p className="text-sm font-semibold text-ink-700">{title}</p>
+      {description ? <p className="mx-auto mt-1 max-w-md text-xs leading-relaxed text-ink-500">{description}</p> : null}
       {action ? <div className="mt-4 flex justify-center">{action}</div> : null}
     </div>
   );
@@ -97,8 +100,8 @@ export function Chip({
   className?: string;
 }) {
   return (
-    <span className={cx("sm-chip", token ? token.chip : "border-white/10 bg-white/5 text-slate-300", className)}>
-      {token ? <span className="h-1.5 w-1.5 rounded-full" style={{ background: token.hex }} /> : null}
+    <span className={cx("sm-chip", token ? token.chip : "border-rule bg-canvas text-ink-500", className)}>
+      {token ? <span className="h-1.5 w-1.5" style={{ background: token.hex }} /> : null}
       {children ?? token?.label}
     </span>
   );
@@ -121,7 +124,7 @@ export function Dot({ color, pulse = false }: { color: string; pulse?: boolean }
 export function ProgressBar({
   value,
   max = 100,
-  color = "#22d3ee",
+  color = CHART_PRIMARY,
   className,
   height = 6,
 }: {
@@ -134,14 +137,14 @@ export function ProgressBar({
   const ratio = max > 0 ? Math.min(1, Math.max(0, value / max)) : 0;
   return (
     <div
-      className={cx("w-full overflow-hidden rounded-full bg-white/5", className)}
+      className={cx("w-full overflow-hidden border border-rule-soft bg-canvas", className)}
       style={{ height }}
       role="progressbar"
       aria-valuenow={Math.round(ratio * 100)}
       aria-valuemin={0}
       aria-valuemax={100}
     >
-      <div className="h-full rounded-full transition-[width] duration-500" style={{ width: `${ratio * 100}%`, background: color }} />
+      <div className="h-full transition-[width] duration-500" style={{ width: `${ratio * 100}%`, background: color }} />
     </div>
   );
 }
@@ -162,17 +165,17 @@ export function SignalMeter({
 }) {
   const ratio = maxPoints > 0 ? Math.min(1, points / maxPoints) : 0;
   return (
-    <div className="rounded-lg border border-white/10 bg-white/[0.02] p-3">
+    <div className="border border-rule-soft bg-paper-tint p-3">
       <div className="flex items-baseline justify-between gap-3">
-        <span className="text-xs font-semibold text-slate-200">{label}</span>
-        <span className="text-xs tabular-nums text-slate-400">
-          <span className="font-semibold text-slate-100">{points.toFixed(1)}</span> / {maxPoints}
+        <span className="text-xs font-semibold text-ink-900">{label}</span>
+        <span className="text-xs text-ink-500">
+          <span className="font-semibold text-ink-900">{points.toFixed(1)}</span> / {maxPoints}
         </span>
       </div>
-      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/5">
-        <div className="h-full rounded-full" style={{ width: `${ratio * 100}%`, background: color }} />
+      <div className="mt-2 h-1.5 overflow-hidden border border-rule-soft bg-canvas">
+        <div className="h-full" style={{ width: `${ratio * 100}%`, background: color }} />
       </div>
-      <p className="mt-2 text-[11px] leading-relaxed text-slate-400">{detail}</p>
+      <p className="mt-2 text-[11px] leading-relaxed text-ink-500">{detail}</p>
     </div>
   );
 }
@@ -195,30 +198,30 @@ export function StatTile({
   footer?: ReactNode;
 }) {
   const tones: Record<string, string> = {
-    default: "text-white",
-    danger: "text-rose-300",
-    warning: "text-orange-300",
-    success: "text-emerald-300",
+    default: "text-ink-900",
+    danger: "text-risk-critical",
+    warning: "text-risk-high",
+    success: "text-risk-normal",
     accent: "text-accent",
   };
 
   return (
-    <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4">
-      <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">{label}</p>
-      <p className={cx("mt-2 text-2xl font-semibold tabular-nums tracking-tight", tones[tone])}>{value}</p>
-      {hint ? <p className="mt-1 text-[11px] leading-relaxed text-slate-500">{hint}</p> : null}
-      {footer ? <div className="mt-3">{footer}</div> : null}
+    <div className="border border-rule bg-paper p-3.5">
+      <p className="sm-eyebrow">{label}</p>
+      <p className={cx("mt-1.5 font-serif text-3xl leading-none", tones[tone])}>{value}</p>
+      {hint ? <p className="mt-1.5 text-[11px] leading-relaxed text-ink-500">{hint}</p> : null}
+      {footer ? <div className="mt-3 border-t border-rule-soft pt-2.5">{footer}</div> : null}
     </div>
   );
 }
 
 export function KeyValue({ items }: { items: { label: string; value: ReactNode }[] }) {
   return (
-    <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
+    <dl className="grid gap-x-6 gap-y-2.5 sm:grid-cols-2">
       {items.map((item) => (
         <div key={item.label} className="min-w-0">
-          <dt className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">{item.label}</dt>
-          <dd className="mt-0.5 truncate text-sm text-slate-200">{item.value}</dd>
+          <dt className="sm-eyebrow">{item.label}</dt>
+          <dd className="mt-0.5 truncate text-sm text-ink-900">{item.value}</dd>
         </div>
       ))}
     </dl>
@@ -244,11 +247,11 @@ export interface ButtonProps {
 }
 
 const BUTTON_VARIANTS: Record<ButtonVariant, string> = {
-  primary: "bg-accent/90 text-surface-900 hover:bg-accent font-semibold",
-  secondary: "border border-white/15 bg-white/5 text-slate-100 hover:border-white/25 hover:bg-white/10",
-  ghost: "text-slate-300 hover:bg-white/5 hover:text-white",
-  danger: "border border-rose-400/40 bg-rose-500/15 text-rose-100 hover:bg-rose-500/25",
-  success: "border border-emerald-400/40 bg-emerald-500/15 text-emerald-100 hover:bg-emerald-500/25",
+  primary: "border border-accent bg-accent text-white hover:bg-accent-deep font-semibold",
+  secondary: "border border-rule-strong bg-paper text-ink-900 hover:bg-canvas",
+  ghost: "border border-transparent text-ink-500 hover:border-rule hover:bg-canvas hover:text-ink-900",
+  danger: "border border-risk-critical/50 bg-risk-critical/[0.07] text-risk-critical hover:bg-risk-critical/[0.14]",
+  success: "border border-risk-normal/50 bg-risk-normal/[0.07] text-risk-normal hover:bg-risk-normal/[0.14]",
 };
 
 export function Button({
@@ -269,8 +272,8 @@ export function Button({
       disabled={disabled}
       onClick={onClick}
       className={cx(
-        "inline-flex items-center justify-center gap-1.5 rounded-lg transition disabled:cursor-not-allowed disabled:opacity-40",
-        size === "sm" ? "px-2.5 py-1.5 text-xs" : "px-3.5 py-2 text-sm",
+        "inline-flex items-center justify-center gap-1.5 transition disabled:cursor-not-allowed disabled:opacity-40",
+        size === "sm" ? "px-2.5 py-1 text-xs" : "px-3 py-1.5 text-sm",
         BUTTON_VARIANTS[variant],
         fullWidth && "w-full",
         className,
@@ -302,8 +305,8 @@ export function Field({
     <label className={cx("block", className)}>
       <span className="sm-label">{label}</span>
       {children}
-      {error ? <span className="mt-1 block text-[11px] text-rose-300">{error}</span> : null}
-      {!error && hint ? <span className="mt-1 block text-[11px] text-slate-500">{hint}</span> : null}
+      {error ? <span className="mt-1 block text-[11px] font-medium text-risk-critical">{error}</span> : null}
+      {!error && hint ? <span className="mt-1 block text-[11px] text-ink-400">{hint}</span> : null}
     </label>
   );
 }
@@ -364,7 +367,7 @@ export function Select<T extends string>({
       onChange={(event: ChangeEvent<HTMLSelectElement>) => onChange(event.target.value as T)}
     >
       {options.map((option) => (
-        <option key={option.value} value={option.value} disabled={option.disabled} className="bg-surface-700">
+        <option key={option.value} value={option.value} disabled={option.disabled} className="bg-paper">
           {option.label}
         </option>
       ))}
@@ -410,25 +413,30 @@ export function Tabs<T extends string>({
   className?: string;
 }) {
   return (
-    <div className={cx("flex flex-wrap items-center gap-1 rounded-lg border border-white/10 bg-white/[0.02] p-1", className)}>
-      {tabs.map((tab) => (
-        <button
-          key={tab.id}
-          type="button"
-          onClick={() => onChange(tab.id)}
-          className={cx(
-            "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition",
-            active === tab.id ? "bg-accent/15 text-accent" : "text-slate-400 hover:bg-white/5 hover:text-slate-200",
-          )}
-        >
-          {tab.label}
-          {tab.badge !== undefined ? (
-            <span className="rounded-full bg-white/10 px-1.5 text-[10px] font-semibold tabular-nums text-slate-300">
-              {tab.badge}
-            </span>
-          ) : null}
-        </button>
-      ))}
+    <div className={cx("flex flex-wrap items-end gap-0 border-b border-rule", className)}>
+      {tabs.map((tab) => {
+        const isActive = active === tab.id;
+        return (
+          <button
+            key={tab.id}
+            type="button"
+            onClick={() => onChange(tab.id)}
+            className={cx(
+              "-mb-px inline-flex items-center gap-1.5 border-b-2 px-3 py-2 text-xs transition",
+              isActive
+                ? "border-accent bg-paper font-semibold text-accent"
+                : "border-transparent text-ink-500 hover:border-rule hover:text-ink-900",
+            )}
+          >
+            {tab.label}
+            {tab.badge !== undefined ? (
+              <span className="border border-rule bg-canvas px-1.5 text-[10px] font-semibold text-ink-500">
+                {tab.badge}
+              </span>
+            ) : null}
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -466,24 +474,24 @@ export function Modal({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-surface-900/70 p-4 backdrop-blur-sm sm:p-8">
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-ink-900/45 p-4 sm:p-8">
       <div
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className={cx("sm-panel w-full animate-rise-in p-5", width)}
+        className={cx("animate-rise-in w-full border border-rule-strong bg-paper shadow-sheet", width)}
       >
-        <div className="mb-4 flex items-start justify-between gap-4">
+        <div className="flex items-start justify-between gap-4 border-b border-rule bg-canvas px-4 py-3">
           <div>
-            <h2 className="text-base font-semibold text-white">{title}</h2>
-            {subtitle ? <p className="mt-0.5 text-xs text-slate-400">{subtitle}</p> : null}
+            <h2 className="text-base leading-tight">{title}</h2>
+            {subtitle ? <p className="mt-0.5 text-xs text-ink-500">{subtitle}</p> : null}
           </div>
           <Button variant="ghost" size="sm" onClick={onClose} title="Close">
             ✕
           </Button>
         </div>
-        <div className="max-h-[70vh] overflow-y-auto pr-1">{children}</div>
-        {footer ? <div className="mt-5 flex flex-wrap justify-end gap-2">{footer}</div> : null}
+        <div className="max-h-[68vh] overflow-y-auto p-4">{children}</div>
+        {footer ? <div className="flex flex-wrap justify-end gap-2 border-t border-rule bg-canvas px-4 py-3">{footer}</div> : null}
       </div>
     </div>
   );
@@ -509,7 +517,7 @@ export function DataTable({
     <div className={cx("-mx-1 overflow-x-auto", className)}>
       <table className="w-full min-w-[42rem] border-collapse">
         <thead>
-          <tr className="border-b border-white/10">
+          <tr>
             {head.map((cell, index) => (
               <th key={index} className="sm-th">
                 {cell}
@@ -517,10 +525,10 @@ export function DataTable({
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-white/5">
+        <tbody>
           {isEmpty ? (
             <tr>
-              <td className="sm-td text-center text-slate-500" colSpan={head.length}>
+              <td className="sm-td text-center text-ink-400" colSpan={head.length}>
                 {empty ?? "No records."}
               </td>
             </tr>

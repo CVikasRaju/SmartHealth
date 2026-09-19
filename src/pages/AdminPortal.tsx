@@ -87,9 +87,9 @@ function ControlRoom() {
             ]}
             size={190}
           />
-          <p className="text-center text-[11px] leading-relaxed text-slate-400">
+          <p className="text-center text-[11px] leading-relaxed text-ink-500">
             Mean score across the {portfolio.total}-molecule formulary is{" "}
-            <span className="font-semibold text-slate-200">{portfolio.meanScore}</span>.
+            <span className="font-semibold text-ink-900">{portfolio.meanScore}</span>.
           </p>
         </Panel>
 
@@ -104,7 +104,7 @@ function ControlRoom() {
                 {derived.assessments
                   .filter((item) => item.tier === "critical")
                   .map((item) => (
-                    <span key={item.medicineId} className="text-[10px] text-rose-200">
+                    <span key={item.medicineId} className="text-[10px] text-risk-critical">
                       {item.brandName}
                     </span>
                   ))}
@@ -138,7 +138,7 @@ function ControlRoom() {
           subtitle="Stock sitting above a ward's own par level cannot serve a ward that is short without a transfer. Approving a proposal releases that stranded stock and re-runs the forecast."
           icon={<Icon name="swap" size={18} />}
           actions={
-            <span className="text-[11px] text-slate-400">
+            <span className="text-[11px] text-ink-500">
               {derived.proposals.length} pending · up to {potentialDrop.toFixed(1)} SPS points recoverable ·{" "}
               {totalStranded.toFixed(0)} units stranded
             </span>
@@ -155,31 +155,31 @@ function ControlRoom() {
             {derived.proposals.slice(0, 6).map((proposal) => (
               <li
                 key={proposal.id}
-                className="flex flex-wrap items-center gap-3 rounded-lg border border-white/10 bg-white/[0.02] p-3"
+                className="flex flex-wrap items-center gap-3 rounded-lg border border-rule bg-paper p-3"
               >
                 <div className="min-w-0 flex-1">
-                  <p className="flex flex-wrap items-center gap-2 text-xs font-semibold text-white">
+                  <p className="flex flex-wrap items-center gap-2 text-xs font-semibold text-ink-900">
                     {proposal.drugName}
-                    <span className="text-[10px] font-normal text-slate-500">
+                    <span className="text-[10px] font-normal text-ink-400">
                       {WARD_LABELS[proposal.fromWard]} → {WARD_LABELS[proposal.toWard]}
                     </span>
                   </p>
-                  <p className="mt-1 text-[11px] leading-relaxed text-slate-400">{proposal.rationale}</p>
+                  <p className="mt-1 text-[11px] leading-relaxed text-ink-500">{proposal.rationale}</p>
                 </div>
                 <div className="flex shrink-0 items-center gap-4">
                   <div className="text-right">
-                    <p className="text-[10px] uppercase tracking-wider text-slate-500">Move</p>
-                    <p className="text-sm font-semibold tabular-nums text-slate-100">{proposal.quantity}</p>
+                    <p className="text-[10px] uppercase tracking-wider text-ink-400">Move</p>
+                    <p className="text-sm font-semibold tabular-nums text-ink-900">{proposal.quantity}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-[10px] uppercase tracking-wider text-slate-500">SPS drop</p>
-                    <p className="text-sm font-semibold tabular-nums text-emerald-300">
+                    <p className="text-[10px] uppercase tracking-wider text-ink-400">SPS drop</p>
+                    <p className="text-sm font-semibold tabular-nums text-risk-normal">
                       {proposal.estimatedSpsDrop > 0 ? `-${proposal.estimatedSpsDrop}` : "—"}
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-[10px] uppercase tracking-wider text-slate-500">Wards</p>
-                    <p className="text-sm font-semibold tabular-nums text-sky-300">
+                    <p className="text-[10px] uppercase tracking-wider text-ink-400">Wards</p>
+                    <p className="text-sm font-semibold tabular-nums text-accent">
                       {proposal.wardsRecovered > 0 ? `+${proposal.wardsRecovered}` : "—"}
                     </p>
                   </div>
@@ -278,23 +278,23 @@ function ControlRoom() {
           <DataTable head={["Molecule", "Route", "Units", "Projected drop", "Decision", "By", "When"]}>
             {derived.decisionLedger.map((entry) => (
               <tr key={entry.id}>
-                <td className="sm-td font-medium text-slate-100">{entry.drugName}</td>
-                <td className="sm-td text-slate-400">
+                <td className="sm-td font-medium text-ink-900">{entry.drugName}</td>
+                <td className="sm-td text-ink-500">
                   {WARD_LABELS[entry.fromWard]} → {WARD_LABELS[entry.toWard]}
                 </td>
                 <td className="sm-td tabular-nums">{entry.quantity}</td>
-                <td className="sm-td tabular-nums text-emerald-300">-{entry.estimatedSpsDrop}</td>
+                <td className="sm-td tabular-nums text-risk-normal">-{entry.estimatedSpsDrop}</td>
                 <td className="sm-td">
                   <Chip
                     token={
                       entry.status === "approved"
-                        ? { label: "Approved", chip: "border-emerald-400/40 bg-emerald-500/10 text-emerald-200", hex: "#34d399", rank: 0 }
-                        : { label: "Declined", chip: "border-slate-500/30 bg-slate-500/10 text-slate-400", hex: "#64748b", rank: 1 }
+                        ? { label: "Approved", chip: "border-risk-normal/45 bg-risk-normal/[0.08] text-risk-normal", hex: "#1c6b3c", rank: 0 }
+                        : { label: "Declined", chip: "border-rule bg-canvas text-ink-500", hex: "#98a0a8", rank: 1 }
                     }
                   />
                 </td>
-                <td className="sm-td text-slate-400">{entry.decidedBy ?? "—"}</td>
-                <td className="sm-td text-slate-500">{entry.decidedAt ? formatDateTime(entry.decidedAt) : "—"}</td>
+                <td className="sm-td text-ink-500">{entry.decidedBy ?? "—"}</td>
+                <td className="sm-td text-ink-400">{entry.decidedAt ? formatDateTime(entry.decidedAt) : "—"}</td>
               </tr>
             ))}
           </DataTable>
@@ -340,7 +340,7 @@ function ScenarioSandbox() {
                 options={PENALTY_PRESETS.map((item) => ({ value: item.id, label: item.label }))}
               />
             </Field>
-            <p className="rounded-lg border border-white/10 bg-white/[0.02] p-3 text-[11px] leading-relaxed text-slate-400">
+            <p className="rounded-lg border border-rule bg-paper p-3 text-[11px] leading-relaxed text-ink-500">
               {preset.description}
             </p>
             <KeyValue
@@ -354,9 +354,9 @@ function ScenarioSandbox() {
           </div>
 
           <div className="space-y-3">
-            <div className="rounded-lg border border-accent/25 bg-accent/[0.06] p-3">
+            <div className="rounded-lg border border-accent/35 bg-accent-soft p-3">
               <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-accent/90">Projected outcome</p>
-              <p className="mt-1.5 text-xs leading-relaxed text-slate-200">{result.headline}</p>
+              <p className="mt-1.5 text-xs leading-relaxed text-ink-900">{result.headline}</p>
             </div>
             <div className="grid gap-3 sm:grid-cols-3">
               <StatTile label="Critical" value={result.criticalCount} tone={result.criticalCount > 0 ? "danger" : "success"} />
@@ -378,23 +378,23 @@ function ScenarioSandbox() {
             const delta = Number((projection.projectedSps - projection.baselineSps).toFixed(1));
             const token = RISK_TOKENS[projection.projectedTier];
             return (
-              <tr key={projection.medicineId} className={projection.escalated ? "bg-rose-500/[0.04]" : undefined}>
-                <td className="sm-td font-medium text-slate-100">{projection.drugName}</td>
-                <td className="sm-td tabular-nums text-slate-400">{projection.baselineSps}</td>
+              <tr key={projection.medicineId} className={projection.escalated ? "bg-risk-critical/[0.04]" : undefined}>
+                <td className="sm-td font-medium text-ink-900">{projection.drugName}</td>
+                <td className="sm-td tabular-nums text-ink-500">{projection.baselineSps}</td>
                 <td className="sm-td tabular-nums">
                   <span className="font-semibold" style={{ color: token.hex }}>
                     {projection.projectedSps}
                   </span>
                 </td>
-                <td className={cx("sm-td tabular-nums", delta > 0 ? "text-rose-300" : "text-slate-500")}>
+                <td className={cx("sm-td tabular-nums", delta > 0 ? "text-risk-critical" : "text-ink-400")}>
                   {delta > 0 ? `+${delta}` : delta}
                 </td>
-                <td className="sm-td tabular-nums text-slate-400">{formatDays(projection.baselineDir)}d</td>
-                <td className="sm-td tabular-nums text-slate-200">{formatDays(projection.projectedDir)}d</td>
+                <td className="sm-td tabular-nums text-ink-500">{formatDays(projection.baselineDir)}d</td>
+                <td className="sm-td tabular-nums text-ink-900">{formatDays(projection.projectedDir)}d</td>
                 <td className="sm-td">
                   <span className="inline-flex items-center gap-1.5">
                     <Chip token={RISK_TOKENS[projection.baselineTier]} />
-                    {projection.escalated ? <Icon name="chevronDown" size={12} className="-rotate-90 text-rose-400" /> : null}
+                    {projection.escalated ? <Icon name="chevronDown" size={12} className="-rotate-90 text-risk-critical" /> : null}
                     <Chip token={token} />
                   </span>
                 </td>
@@ -560,7 +560,7 @@ function HospitalAnalytics() {
             icon={<Icon name="stock" size={18} />}
             actions={
               <div className="w-24">
-                <Sparkline values={trendSeries.length >= 2 ? trendSeries : [0, 0]} stroke="#fbbf24" height={28} />
+                <Sparkline values={trendSeries.length >= 2 ? trendSeries : [0, 0]} stroke="#8a6a06" height={28} />
               </div>
             }
           />
@@ -583,17 +583,17 @@ function HospitalAnalytics() {
               return (
                 <tr key={appointment.id}>
                   <td className="sm-td">
-                    <span className="font-medium text-slate-100">{patient?.name ?? "—"}</span>
-                    <span className="ml-2 text-[10px] text-slate-500">{patient?.mrn}</span>
+                    <span className="font-medium text-ink-900">{patient?.name ?? "—"}</span>
+                    <span className="ml-2 text-[10px] text-ink-400">{patient?.mrn}</span>
                   </td>
-                  <td className="sm-td text-slate-400">{appointment.department}</td>
-                  <td className="sm-td text-slate-400">{formatDateTime(appointment.scheduledFor)}</td>
-                  <td className="sm-td max-w-[16rem] truncate text-slate-300">{appointment.reason}</td>
+                  <td className="sm-td text-ink-500">{appointment.department}</td>
+                  <td className="sm-td text-ink-500">{formatDateTime(appointment.scheduledFor)}</td>
+                  <td className="sm-td max-w-[16rem] truncate text-ink-700">{appointment.reason}</td>
                   <td className="sm-td">
                     <Chip
                       token={{
                         label: appointment.acuity,
-                        chip: "border-white/15 bg-white/5 text-slate-200",
+                        chip: "border-rule-strong bg-paper text-ink-900",
                         hex: CHART_PALETTE[0],
                         rank: 0,
                       }}
@@ -662,19 +662,19 @@ function Governance() {
           title="Immutable action trail"
           subtitle="Every clinical, supply and financial mutation is appended by the reducer, so the ledger cannot drift from the data."
           icon={<Icon name="lock" size={18} />}
-          actions={<span className="text-[11px] text-slate-400">{state.db.auditLog.length} entries</span>}
+          actions={<span className="text-[11px] text-ink-500">{state.db.auditLog.length} entries</span>}
         />
         <DataTable head={["When", "Actor", "Role", "Action", "Target", "Detail"]}>
           {state.db.auditLog.slice(0, 12).map((entry) => (
             <tr key={entry.id}>
-              <td className="sm-td whitespace-nowrap text-slate-400">{formatDateTime(entry.at)}</td>
-              <td className="sm-td text-slate-200">{entry.actorName}</td>
+              <td className="sm-td whitespace-nowrap text-ink-500">{formatDateTime(entry.at)}</td>
+              <td className="sm-td text-ink-900">{entry.actorName}</td>
               <td className="sm-td">
-                <span className="sm-chip border-white/15 bg-white/5 text-slate-300">{entry.actorRole}</span>
+                <span className="sm-chip border-rule-strong bg-paper text-ink-700">{entry.actorRole}</span>
               </td>
               <td className="sm-td font-mono text-[11px] text-accent">{entry.action}</td>
-              <td className="sm-td text-slate-400">{entry.target}</td>
-              <td className="sm-td max-w-[24rem] text-slate-300">{entry.detail}</td>
+              <td className="sm-td text-ink-500">{entry.target}</td>
+              <td className="sm-td max-w-[24rem] text-ink-700">{entry.detail}</td>
             </tr>
           ))}
         </DataTable>
@@ -692,11 +692,11 @@ function Governance() {
           ) : (
             <ul className="space-y-2">
               {alertLedger.map((alert) => (
-                <li key={alert.id} className="flex items-start gap-3 rounded-lg border border-white/10 bg-white/[0.02] p-3">
+                <li key={alert.id} className="flex items-start gap-3 rounded-lg border border-rule bg-paper p-3">
                   <span className="mt-1 h-2 w-2 shrink-0 rounded-full" style={{ background: RISK_TOKENS[alert.tier].hex }} />
                   <div className="min-w-0">
-                    <p className="text-xs font-semibold text-slate-100">{alert.drugName}</p>
-                    <p className="mt-0.5 text-[11px] text-slate-400">{alert.message}</p>
+                    <p className="text-xs font-semibold text-ink-900">{alert.drugName}</p>
+                    <p className="mt-0.5 text-[11px] text-ink-500">{alert.message}</p>
                   </div>
                 </li>
               ))}
@@ -713,7 +713,7 @@ function Governance() {
           <div className="-mx-1 overflow-x-auto">
             <table className="w-full min-w-[34rem] border-collapse">
               <thead>
-                <tr className="border-b border-white/10">
+                <tr className="border-b border-rule">
                   <th className="sm-th">Capability</th>
                   {["admin", "doctor", "nurse", "receptionist", "cashier", "patient"].map((role) => (
                     <th key={role} className="sm-th text-center">
@@ -722,16 +722,16 @@ function Governance() {
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/5">
+              <tbody className="divide-y divide-rule-soft">
                 {PERMISSION_MATRIX.map((row) => (
                   <tr key={row.capability}>
-                    <td className="sm-td text-slate-300">{row.capability}</td>
+                    <td className="sm-td text-ink-700">{row.capability}</td>
                     {["admin", "doctor", "nurse", "receptionist", "cashier", "patient"].map((role) => (
                       <td key={role} className="sm-td text-center">
                         {row.roles[role] ? (
-                          <span className="text-emerald-400">●</span>
+                          <span className="text-risk-normal">●</span>
                         ) : (
-                          <span className="text-slate-600">—</span>
+                          <span className="text-ink-400">—</span>
                         )}
                       </td>
                     ))}
@@ -762,17 +762,17 @@ function Governance() {
             });
             return (
               <tr key={member.id}>
-                <td className="sm-td font-mono text-[11px] text-slate-400">{member.employeeId}</td>
-                <td className="sm-td font-medium text-slate-100">{member.fullName}</td>
+                <td className="sm-td font-mono text-[11px] text-ink-500">{member.employeeId}</td>
+                <td className="sm-td font-medium text-ink-900">{member.fullName}</td>
                 <td className="sm-td">
-                  <span className="sm-chip border-white/15 bg-white/5 text-slate-300">{member.role}</span>
+                  <span className="sm-chip border-rule-strong bg-paper text-ink-700">{member.role}</span>
                 </td>
-                <td className="sm-td text-slate-400">{member.department}</td>
-                <td className="sm-td text-slate-400">
+                <td className="sm-td text-ink-500">{member.department}</td>
+                <td className="sm-td text-ink-500">
                   {member.shift} · from {String(member.shiftStartHour).padStart(2, "0")}:00
                 </td>
-                <td className="sm-td text-slate-400">{member.contactNumber}</td>
-                <td className="sm-td text-slate-400">{workload}</td>
+                <td className="sm-td text-ink-500">{member.contactNumber}</td>
+                <td className="sm-td text-ink-500">{workload}</td>
               </tr>
             );
           })}
@@ -801,15 +801,15 @@ function Governance() {
             if (!medicine) return null;
             return (
               <tr key={assessment.medicineId}>
-                <td className="sm-td font-mono text-[11px] text-slate-500">{medicine.sku}</td>
-                <td className="sm-td font-medium text-slate-100">{medicine.brandName}</td>
-                <td className="sm-td text-slate-400">{medicine.genericName}</td>
-                <td className="sm-td text-slate-400">{medicine.form.replace(/_/g, " ")}</td>
+                <td className="sm-td font-mono text-[11px] text-ink-400">{medicine.sku}</td>
+                <td className="sm-td font-medium text-ink-900">{medicine.brandName}</td>
+                <td className="sm-td text-ink-500">{medicine.genericName}</td>
+                <td className="sm-td text-ink-500">{medicine.form.replace(/_/g, " ")}</td>
                 <td className="sm-td tabular-nums">
                   {medicine.currentStock} {medicine.unit}
                 </td>
-                <td className="sm-td tabular-nums text-slate-400">{medicine.allocatedStock}</td>
-                <td className="sm-td text-[11px] text-slate-400">
+                <td className="sm-td tabular-nums text-ink-500">{medicine.allocatedStock}</td>
+                <td className="sm-td text-[11px] text-ink-500">
                   {medicine.wardStock.map((holding) => `${holding.ward}:${holding.quantity}`).join(" · ")}
                 </td>
                 <td className="sm-td tabular-nums">

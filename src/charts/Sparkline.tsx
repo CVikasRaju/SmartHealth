@@ -26,7 +26,7 @@ const VIEW_WIDTH = 120;
 
 export default function Sparkline({
   values,
-  stroke = "#22d3ee",
+  stroke = "#14416b",
   fill = "rgba(34,211,238,0.16)",
   height = 34,
   showEndPoint = true,
@@ -39,7 +39,7 @@ export default function Sparkline({
   if (series.length < 2) {
     return (
       <div
-        className={`flex items-center justify-center text-[10px] uppercase tracking-wider text-slate-500 ${className ?? ""}`}
+        className={`flex items-center justify-center text-[10px] uppercase tracking-wider text-ink-400 ${className ?? ""}`}
         style={{ height }}
       >
         No trend data

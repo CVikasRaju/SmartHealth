@@ -1,10 +1,9 @@
 /**
  * Application shell.
  *
- * Owns the persistent chrome: the role-aware navigation rail, the top bar with
- * the role switcher and acting-staff selectors, and the live risk summary. The
- * shell renders no clinical content itself, so each portal page stays focused
- * on its own workflow.
+ * Owns the persistent chrome: the letterhead masthead, the role-aware document
+ * index down the left, and the session controls. The shell renders no clinical
+ * content itself, so each portal page stays focused on its own workflow.
  */
 
 import { useEffect, useState, type ReactNode } from "react";
@@ -42,7 +41,7 @@ function ActingAsSelector() {
   if (members.length <= 1) return null;
 
   return (
-    <div className="hidden min-w-[13rem] sm:block">
+    <div className="hidden min-w-[12rem] sm:block">
       <Select
         value={state.session.staffId}
         onChange={(value) => actions.setActiveStaff(value)}
@@ -59,9 +58,9 @@ function ActivePatientSelector() {
   if (role === "patient") {
     const patient = derived.currentPatient;
     return (
-      <div className="hidden items-center gap-2 rounded-lg border border-white/12 bg-white/[0.04] px-3 py-2 md:flex">
-        <Icon name="user" size={15} className="text-slate-400" />
-        <span className="text-xs text-slate-200">
+      <div className="hidden items-center gap-2 border border-rule bg-paper px-2.5 py-1.5 md:flex">
+        <Icon name="user" size={14} className="text-ink-400" />
+        <span className="text-xs text-ink-700">
           {patient ? `${patient.name} · ${patient.mrn}` : "No patient linked"}
         </span>
       </div>
@@ -70,7 +69,7 @@ function ActivePatientSelector() {
 
   const patients = state.db.patients;
   return (
-    <div className="hidden min-w-[15rem] md:block">
+    <div className="hidden min-w-[14rem] md:block">
       <Select
         value={state.session.patientId}
         onChange={(value) => actions.setActivePatient(value)}
@@ -92,21 +91,21 @@ function RiskSummary() {
   const { portfolio } = derived;
   if (portfolio.critical + portfolio.high === 0) {
     return (
-      <span className="hidden items-center gap-2 rounded-lg border border-emerald-400/25 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-200 lg:flex">
-        <Icon name="check" size={14} />
+      <span className="hidden items-center gap-2 border border-risk-normal/40 bg-risk-normal/[0.06] px-2.5 py-1.5 text-xs text-risk-normal lg:flex">
+        <Icon name="check" size={13} />
         All molecules inside tolerance
       </span>
     );
   }
 
   return (
-    <span className="hidden items-center gap-2 rounded-lg border border-rose-400/25 bg-rose-500/10 px-3 py-2 text-xs text-rose-100 lg:flex">
-      <Icon name="alert" size={14} />
+    <span className="hidden items-center gap-2 border border-risk-critical/40 bg-risk-critical/[0.06] px-2.5 py-1.5 text-xs text-risk-critical lg:flex">
+      <Icon name="alert" size={13} />
       <span className="font-semibold">{portfolio.critical} critical</span>
-      <span className="text-rose-200/70">·</span>
+      <span className="text-rule-strong">|</span>
       <span>{portfolio.high} high</span>
-      <span className="text-rose-200/70">·</span>
-      <span>peak {portfolio.peakScore}</span>
+      <span className="text-rule-strong">|</span>
+      <span>peak SPS {portfolio.peakScore}</span>
     </span>
   );
 }
@@ -123,20 +122,23 @@ export default function AppShell({ children }: { children: ReactNode }) {
   const worst = derived.assessments[0];
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-screen flex-col bg-canvas">
+      {/* Institutional spine: the one full-bleed colour band in the system. */}
+      <div className="no-print h-1 shrink-0 bg-accent" />
+
       {/* ---------------------------------------------------------- */}
-      {/* Top bar                                                     */}
+      {/* Masthead                                                    */}
       {/* ---------------------------------------------------------- */}
-      <header className="no-print sticky top-0 z-30 border-b border-white/10 bg-surface-900/85 backdrop-blur">
-        <div className="mx-auto flex max-w-[110rem] flex-wrap items-center gap-3 px-4 py-2.5 lg:px-6">
+      <header className="no-print sticky top-0 z-30 bg-paper sm-masthead-rule">
+        <div className="mx-auto flex max-w-[110rem] flex-wrap items-center gap-4 px-4 py-2.5 lg:px-6">
           <div className="flex items-center gap-3">
-            <span className="grid h-9 w-9 place-items-center rounded-lg bg-gradient-to-br from-accent to-accent-deep text-surface-900">
+            <span className="grid h-10 w-10 shrink-0 place-items-center border border-accent bg-accent text-white">
               <Icon name="vitals" size={19} />
             </span>
             <div className="leading-tight">
-              <p className="text-sm font-semibold tracking-tight text-white">SmartMedic</p>
-              <p className="hidden text-[10px] uppercase tracking-[0.16em] text-slate-500 sm:block">
-                Hospital operations · shortage intelligence
+              <p className="font-serif text-lg font-semibold tracking-tight text-ink-900">SmartMedic</p>
+              <p className="text-[10px] uppercase tracking-[0.14em] text-ink-400">
+                Hospital operations &middot; shortage intelligence &middot; report simplifier
               </p>
             </div>
           </div>
@@ -145,8 +147,8 @@ export default function AppShell({ children }: { children: ReactNode }) {
             <ActingAsSelector />
             <ActivePatientSelector />
             <RiskSummary />
-            <span className="hidden items-center gap-1.5 rounded-lg border border-white/12 bg-white/[0.04] px-3 py-2 text-xs tabular-nums text-slate-300 xl:flex">
-              <Icon name="refresh" size={13} className="text-slate-500" />
+            <span className="hidden items-center gap-1.5 border border-rule bg-paper px-2.5 py-1.5 text-xs text-ink-500 xl:flex">
+              <Icon name="refresh" size={12} className="text-ink-400" />
               {clock}
             </span>
             <AlertRail />
@@ -154,19 +156,19 @@ export default function AppShell({ children }: { children: ReactNode }) {
           </div>
         </div>
 
-        {/* Role summary strip: who you are acting as right now. */}
-        <div className="border-t border-white/[0.06] bg-white/[0.015]">
+        {/* Session strip: who you are acting as right now. */}
+        <div className="border-t border-rule-soft bg-canvas">
           <div className="mx-auto flex max-w-[110rem] flex-wrap items-center gap-x-4 gap-y-1 px-4 py-1.5 text-[11px] lg:px-6">
-            <span className="inline-flex items-center gap-1.5 text-slate-300">
-              <span className="h-1.5 w-1.5 rounded-full" style={{ background: meta.accent }} />
+            <span className="inline-flex items-center gap-1.5 font-medium text-ink-700">
+              <span className="h-2 w-2" style={{ background: meta.accent }} />
               {meta.persona}
             </span>
-            <span className="hidden text-slate-500 sm:inline">{meta.summary}</span>
+            <span className="hidden text-ink-400 sm:inline">{meta.summary}</span>
             {worst && (role === "admin" || role === "doctor") ? (
-              <span className="ml-auto inline-flex items-center gap-1.5 text-slate-400">
-                <Icon name="alert" size={12} className="text-rose-400" />
-                Highest risk: <span className="font-medium text-slate-200">{worst.brandName}</span> at{" "}
-                {worst.sps} ({formatDays(worst.dir)} days cover)
+              <span className="ml-auto inline-flex items-center gap-1.5 text-ink-500">
+                <Icon name="alert" size={12} className="text-risk-critical" />
+                Highest risk: <span className="font-semibold text-ink-900">{worst.brandName}</span> at{" "}
+                {worst.sps} SPS ({formatDays(worst.dir)} days cover)
               </span>
             ) : null}
           </div>
@@ -177,9 +179,12 @@ export default function AppShell({ children }: { children: ReactNode }) {
       {/* Body                                                        */}
       {/* ---------------------------------------------------------- */}
       <div className="mx-auto flex w-full max-w-[110rem] flex-1 flex-col gap-6 px-4 py-5 lg:flex-row lg:px-6">
-        {/* Navigation rail: sidebar on desktop, scrolling strip on mobile. */}
+        {/* Document index: sidebar on desktop, scrolling strip on mobile. */}
         <nav className="no-print -mx-4 shrink-0 px-4 lg:mx-0 lg:w-64 lg:px-0">
-          <div className="flex gap-2 overflow-x-auto pb-1 lg:block lg:space-y-1.5 lg:overflow-visible lg:pb-0">
+          <p className="mb-2 hidden text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-400 lg:block">
+            Contents
+          </p>
+          <div className="flex gap-1 overflow-x-auto pb-1 lg:block lg:space-y-0.5 lg:overflow-visible lg:pb-0">
             {nav.map((item) => {
               const isActive = item.id === active.id;
               return (
@@ -188,20 +193,20 @@ export default function AppShell({ children }: { children: ReactNode }) {
                   type="button"
                   onClick={() => actions.setView(item.id)}
                   className={cx(
-                    "flex w-full min-w-max items-center gap-3 rounded-lg border px-3 py-2.5 text-left transition lg:min-w-0",
+                    "flex w-full min-w-max items-center gap-2.5 border-l-2 px-3 py-2 text-left transition lg:min-w-0",
                     isActive
-                      ? "border-accent/35 bg-accent/10 text-white"
-                      : "border-white/8 bg-white/[0.02] text-slate-300 hover:border-white/20 hover:bg-white/[0.05]",
+                      ? "border-accent bg-accent-soft text-ink-900"
+                      : "border-transparent text-ink-700 hover:border-rule hover:bg-paper",
                   )}
                 >
-                  <span className={cx("shrink-0", isActive ? "text-accent" : "text-slate-400")}>
-                    <Icon name={item.icon} size={17} />
+                  <span className={cx("shrink-0", isActive ? "text-accent" : "text-ink-400")}>
+                    <Icon name={item.icon} size={16} />
                   </span>
                   <span className="min-w-0">
-                    <span className="block truncate text-xs font-semibold">{item.label}</span>
-                    <span className="hidden truncate text-[10px] text-slate-500 lg:block">
-                      {item.description}
+                    <span className={cx("block truncate text-xs", isActive ? "font-semibold" : "font-medium")}>
+                      {item.label}
                     </span>
+                    <span className="hidden truncate text-[10px] text-ink-400 lg:block">{item.description}</span>
                   </span>
                 </button>
               );
@@ -211,27 +216,29 @@ export default function AppShell({ children }: { children: ReactNode }) {
           {/* Sidebar footer: live counters and demo controls. */}
           <div className="no-print mt-4 hidden space-y-3 lg:block">
             {role === "admin" || role === "doctor" ? (
-              <div className="rounded-lg border border-white/10 bg-white/[0.02] p-3">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-                  Formulary pulse
-                </p>
-                <ul className="mt-2.5 space-y-1.5">
-                  {(["critical", "high", "moderate", "normal"] as const).map((tier) => {
-                    const count = derived.assessments.filter((item) => item.tier === tier).length;
-                    const token = RISK_TOKENS[tier];
-                    return (
-                      <li key={tier} className="flex items-center justify-between text-[11px]">
-                        <span className="inline-flex items-center gap-2 text-slate-300">
-                          <span className="h-2 w-2 rounded-full" style={{ background: token.hex }} />
-                          {token.label}
-                        </span>
-                        <span className="font-semibold tabular-nums text-slate-100">{count}</span>
-                      </li>
-                    );
-                  })}
-                </ul>
+              <div className="border border-rule bg-paper p-3">
+                <p className="sm-eyebrow">Formulary status</p>
+                <table className="mt-2 w-full">
+                  <tbody>
+                    {(["critical", "high", "moderate", "normal"] as const).map((tier) => {
+                      const count = derived.assessments.filter((item) => item.tier === tier).length;
+                      const token = RISK_TOKENS[tier];
+                      return (
+                        <tr key={tier} className="border-b border-rule-soft last:border-0">
+                          <td className="py-1.5 text-[11px] text-ink-700">
+                            <span className="inline-flex items-center gap-2">
+                              <span className="h-2 w-2" style={{ background: token.hex }} />
+                              {token.label}
+                            </span>
+                          </td>
+                          <td className="py-1.5 text-right text-[11px] font-semibold text-ink-900">{count}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
                 {criticalCount > 0 ? (
-                  <p className="mt-3 text-[10px] leading-relaxed text-slate-500">
+                  <p className="mt-2.5 border-t border-rule-soft pt-2 text-[10px] leading-relaxed text-ink-500">
                     {derived.proposals.length} redistribution
                     {derived.proposals.length === 1 ? "" : "s"} pending approval.
                   </p>
@@ -239,33 +246,33 @@ export default function AppShell({ children }: { children: ReactNode }) {
               </div>
             ) : null}
 
-            <div className="rounded-lg border border-white/10 bg-white/[0.02] p-3">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">Demo data</p>
-              <p className="mt-1.5 text-[10px] leading-relaxed text-slate-500">
+            <div className="border border-rule bg-paper p-3">
+              <p className="sm-eyebrow">Demonstration data</p>
+              <p className="mt-1.5 text-[10px] leading-relaxed text-ink-500">
                 All state lives in this browser. Reseed to restore the opening scenario.
               </p>
-              <Button size="sm" variant="ghost" fullWidth className="mt-2" onClick={actions.resetDemo}>
-                <Icon name="refresh" size={13} />
-                Reset demo
+              <Button size="sm" variant="secondary" fullWidth className="mt-2" onClick={actions.resetDemo}>
+                <Icon name="refresh" size={12} />
+                Reset to seeded state
               </Button>
             </div>
 
-            <div className="rounded-lg border border-white/10 bg-white/[0.02] p-3">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">Signed in</p>
+            <div className="border border-rule bg-paper p-3">
+              <p className="sm-eyebrow">Signed in</p>
               <div className="mt-2 flex items-center gap-2.5">
                 <span
-                  className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-[11px] font-bold text-surface-900"
+                  className="grid h-8 w-8 shrink-0 place-items-center text-[11px] font-bold text-white"
                   style={{ background: meta.accent }}
                 >
                   {initials(role === "patient" ? (derived.currentPatient?.name ?? "Patient") : (derived.currentStaff?.fullName ?? "User"))}
                 </span>
                 <span className="min-w-0">
-                  <span className="block truncate text-xs font-medium text-slate-200">
+                  <span className="block truncate text-xs font-medium text-ink-900">
                     {role === "patient"
                       ? (derived.currentPatient?.name ?? "Patient portal")
                       : displayName(derived.currentStaff?.fullName ?? "—")}
                   </span>
-                  <span className="block truncate text-[10px] text-slate-500">
+                  <span className="block truncate text-[10px] text-ink-400">
                     {role === "patient"
                       ? (derived.currentPatient?.mrn ?? "")
                       : (derived.currentStaff?.department ?? "")}
@@ -274,7 +281,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
               </div>
             </div>
 
-            <p className="px-1 text-[10px] leading-relaxed text-slate-600">
+            <p className="px-1 text-[10px] leading-relaxed text-ink-400">
               Prototype for demonstration. Not connected to any live clinical system.
             </p>
           </div>
@@ -282,25 +289,25 @@ export default function AppShell({ children }: { children: ReactNode }) {
 
         {/* Main content. */}
         <main className="min-w-0 flex-1">
-          <div className="no-print mb-5">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">
-              {meta.label} · {active.label}
+          <div className="no-print mb-4 border-b border-rule pb-3">
+            <p className="sm-eyebrow">
+              {meta.label} portal &nbsp;/&nbsp; {active.label}
             </p>
-            <h1 className="mt-1 text-xl font-semibold tracking-tight text-white">{active.label}</h1>
-            <p className="mt-1 max-w-3xl text-xs leading-relaxed text-slate-400">{active.description}</p>
+            <h1 className="mt-1 text-[26px] leading-tight">{active.label}</h1>
+            <p className="mt-1 max-w-3xl text-xs leading-relaxed text-ink-500">{active.description}</p>
           </div>
-          <div className="animate-rise-in space-y-6 pb-12">{children}</div>
+          <div className="animate-rise-in space-y-5 pb-12">{children}</div>
         </main>
       </div>
 
-      <footer className="no-print border-t border-white/[0.06] px-4 py-3 text-center text-[10px] text-slate-600 lg:px-6">
-        SmartMedic prototype · seeded in-memory dataset · no live patient data · navigate between roles from the top bar
-        to follow one encounter end to end.
+      <footer className="no-print border-t border-rule bg-paper px-4 py-3 text-center text-[10px] leading-relaxed text-ink-400 lg:px-6">
+        SmartMedic prototype &middot; seeded in-memory dataset &middot; no live patient data &middot; navigate between
+        roles from the masthead to follow one encounter end to end.
         {state.session.role !== "patient" ? (
           <span className="ml-1">
             <button
               type="button"
-              className="text-slate-500 underline decoration-dotted hover:text-accent"
+              className="text-accent underline decoration-dotted hover:text-accent-deep"
               onClick={() => {
                 actions.setRole("patient");
                 actions.setActivePatient("patient-2");

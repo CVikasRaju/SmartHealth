@@ -140,14 +140,14 @@ function InvoiceDesk() {
         <Panel>
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-start gap-3">
-              <span className="grid h-10 w-10 place-items-center rounded-lg bg-emerald-500/15 text-emerald-300">
+              <span className="grid h-10 w-10 place-items-center rounded-lg bg-risk-normal/[0.12] text-risk-normal">
                 <Icon name="check" size={20} />
               </span>
               <div>
-                <p className="text-sm font-semibold text-white">
+                <p className="text-sm font-semibold text-ink-900">
                   {state.db.invoices.find((invoice) => invoice.id === createdId)?.invoiceNumber ?? "Invoice"} raised
                 </p>
-                <p className="mt-0.5 text-xs text-slate-400">
+                <p className="mt-0.5 text-xs text-ink-500">
                   Take it to the POS counter to collect payment.
                 </p>
               </div>
@@ -184,7 +184,7 @@ function InvoiceDesk() {
           </Field>
 
           {billableFromChart.length > 0 ? (
-            <div className="mt-4 rounded-lg border border-accent/25 bg-accent/[0.06] p-3">
+            <div className="mt-4 rounded-lg border border-accent/35 bg-accent-soft p-3">
               <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-accent/90">
                 Unbilled medication from the chart
               </p>
@@ -192,8 +192,8 @@ function InvoiceDesk() {
                 {billableFromChart.map((entry) => (
                   <li key={entry.key} className="flex flex-wrap items-center justify-between gap-2">
                     <span className="min-w-0">
-                      <span className="block text-xs text-slate-100">{entry.description}</span>
-                      <span className="block text-[10px] text-slate-400">
+                      <span className="block text-xs text-ink-900">{entry.description}</span>
+                      <span className="block text-[10px] text-ink-500">
                         {entry.quantity} × {formatCurrency(entry.unitPrice)} · {entry.diagnosis} ·{" "}
                         {formatDate(entry.chartedOn)}
                       </span>
@@ -226,7 +226,7 @@ function InvoiceDesk() {
                   key={entry.description}
                   type="button"
                   onClick={() => addItem({ ...entry, quantity: 1 })}
-                  className="rounded-lg border border-white/10 bg-white/[0.02] px-2.5 py-1.5 text-[11px] text-slate-300 transition hover:border-accent/40 hover:text-accent"
+                  className="rounded-lg border border-rule bg-paper px-2.5 py-1.5 text-[11px] text-ink-700 transition hover:border-accent/45 hover:text-accent"
                 >
                   {entry.description} · {formatCurrency(entry.unitPrice, { compact: true })}
                 </button>
@@ -256,7 +256,7 @@ function InvoiceDesk() {
             ) : (
               <ul className="mt-2 space-y-2">
                 {items.map((item) => (
-                  <li key={item.draftId} className="grid gap-2 rounded-lg border border-white/10 bg-white/[0.02] p-3 sm:grid-cols-[1.6fr_repeat(3,minmax(0,0.6fr))_auto]">
+                  <li key={item.draftId} className="grid gap-2 rounded-lg border border-rule bg-paper p-3 sm:grid-cols-[1.6fr_repeat(3,minmax(0,0.6fr))_auto]">
                     <div>
                       <TextInput
                         value={item.description}
@@ -267,7 +267,7 @@ function InvoiceDesk() {
                         }
                         placeholder="Line description"
                       />
-                      <p className="mt-1 text-[10px] capitalize text-slate-500">{titleCase(item.itemType)}</p>
+                      <p className="mt-1 text-[10px] capitalize text-ink-400">{titleCase(item.itemType)}</p>
                     </div>
                     <TextInput
                       type="number"
@@ -294,7 +294,7 @@ function InvoiceDesk() {
                         )
                       }
                     />
-                    <span className="flex items-center justify-end text-sm font-semibold tabular-nums text-slate-100">
+                    <span className="flex items-center justify-end text-sm font-semibold tabular-nums text-ink-900">
                       {formatCurrency(lineSubtotal(item))}
                     </span>
                     <Button
@@ -316,22 +316,22 @@ function InvoiceDesk() {
             <PanelHeader title="Invoice totals" subtitle="Tax is applied to the taxable subtotal, then rounded to paise." />
             <dl className="space-y-2 text-sm">
               <div className="flex items-center justify-between">
-                <dt className="text-slate-400">Subtotal</dt>
-                <dd className="tabular-nums text-slate-200">{formatCurrency(totals.subtotal)}</dd>
+                <dt className="text-ink-500">Subtotal</dt>
+                <dd className="tabular-nums text-ink-900">{formatCurrency(totals.subtotal)}</dd>
               </div>
               <div className="flex items-center justify-between gap-3">
-                <dt className="text-slate-400">Tax</dt>
+                <dt className="text-ink-500">Tax</dt>
                 <dd className="flex items-center gap-2">
                   <span className="w-20">
                     <TextInput type="number" min={0} max={28} value={taxPct} onChange={(value) => setTaxPct(Number(value) || 0)} />
                   </span>
-                  <span className="text-xs text-slate-500">
+                  <span className="text-xs text-ink-400">
                     % · {formatCurrency(totals.taxAmount)}
                   </span>
                 </dd>
               </div>
-              <div className="flex items-center justify-between border-t border-white/10 pt-2">
-                <dt className="font-semibold text-white">Grand total</dt>
+              <div className="flex items-center justify-between border-t border-rule pt-2">
+                <dt className="font-semibold text-ink-900">Grand total</dt>
                 <dd className="text-lg font-semibold tabular-nums text-accent">{formatCurrency(totals.grandTotal)}</dd>
               </div>
             </dl>
@@ -343,14 +343,14 @@ function InvoiceDesk() {
             </div>
 
             {error ? (
-              <p className="mt-3 rounded-lg border border-rose-400/40 bg-rose-500/10 p-3 text-xs text-rose-100">{error}</p>
+              <p className="mt-3 rounded-lg border border-risk-critical/45 bg-risk-critical/[0.08] p-3 text-xs text-risk-critical">{error}</p>
             ) : null}
 
             <Button variant="primary" fullWidth className="mt-4" onClick={create}>
               <Icon name="invoice" size={14} />
               Raise invoice
             </Button>
-            <p className="mt-2 text-[10px] leading-relaxed text-slate-500">
+            <p className="mt-2 text-[10px] leading-relaxed text-ink-400">
               Raising an invoice writes an immutable billing entry and moves the account to unpaid. Nothing is collected
               until the POS counter records a transaction.
             </p>
@@ -361,7 +361,7 @@ function InvoiceDesk() {
               <PanelHeader title="Account summary" subtitle={`${patient.name} · ${patient.mrn}`} />
               <ul className="space-y-2">
                 {state.db.invoices.filter((invoice) => invoice.patientId === patient.id).length === 0 ? (
-                  <li className="text-xs text-slate-500">No invoices raised for this patient yet.</li>
+                  <li className="text-xs text-ink-400">No invoices raised for this patient yet.</li>
                 ) : (
                   state.db.invoices
                     .filter((invoice) => invoice.patientId === patient.id)
@@ -370,12 +370,12 @@ function InvoiceDesk() {
                       return (
                         <li key={invoice.id} className="flex items-center justify-between gap-3 text-xs">
                           <span className="min-w-0">
-                            <span className="block font-mono text-[11px] text-slate-400">{invoice.invoiceNumber}</span>
-                            <span className="block text-[10px] text-slate-500">{formatDate(invoice.createdAt)}</span>
+                            <span className="block font-mono text-[11px] text-ink-500">{invoice.invoiceNumber}</span>
+                            <span className="block text-[10px] text-ink-400">{formatDate(invoice.createdAt)}</span>
                           </span>
                           <span className="flex shrink-0 items-center gap-2">
                             <Chip token={PAYMENT_STATUS_TOKENS[derivePaymentStatus(invoice)]} />
-                            <span className="tabular-nums text-slate-200">{formatCurrency(invoiceTotals.balanceDue)}</span>
+                            <span className="tabular-nums text-ink-900">{formatCurrency(invoiceTotals.balanceDue)}</span>
                           </span>
                         </li>
                       );
@@ -481,29 +481,29 @@ function PosCheckout() {
                       }}
                       className={cx(
                         "w-full rounded-lg border p-3 text-left transition",
-                        isActive ? "border-accent/40 bg-accent/[0.07]" : "border-white/10 bg-white/[0.02] hover:border-white/25",
+                        isActive ? "border-accent/45 bg-accent-soft" : "border-rule bg-paper hover:border-rule-strong",
                       )}
                     >
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <span className="flex items-center gap-2">
-                          <span className="font-mono text-[11px] text-slate-300">{invoice.invoiceNumber}</span>
+                          <span className="font-mono text-[11px] text-ink-700">{invoice.invoiceNumber}</span>
                           <Chip token={PAYMENT_STATUS_TOKENS[derivePaymentStatus(invoice)]} />
                         </span>
-                        <span className="text-[11px] text-slate-500">{formatDateTime(invoice.createdAt)}</span>
+                        <span className="text-[11px] text-ink-400">{formatDateTime(invoice.createdAt)}</span>
                       </div>
-                      <p className="mt-1 text-xs text-slate-200">
-                        {patient?.name ?? "—"} <span className="text-slate-500">· {patient?.mrn}</span>
+                      <p className="mt-1 text-xs text-ink-900">
+                        {patient?.name ?? "—"} <span className="text-ink-400">· {patient?.mrn}</span>
                       </p>
-                      <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-[11px] text-slate-400">
+                      <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-[11px] text-ink-500">
                         <span>
-                          Total <span className="tabular-nums text-slate-200">{formatCurrency(totals.grandTotal)}</span>
+                          Total <span className="tabular-nums text-ink-900">{formatCurrency(totals.grandTotal)}</span>
                         </span>
                         <span>
-                          Paid <span className="tabular-nums text-emerald-300">{formatCurrency(totals.amountPaid)}</span>
+                          Paid <span className="tabular-nums text-risk-normal">{formatCurrency(totals.amountPaid)}</span>
                         </span>
                         <span>
                           Balance{" "}
-                          <span className={cx("tabular-nums font-semibold", totals.balanceDue > 0 ? "text-orange-300" : "text-emerald-300")}>
+                          <span className={cx("tabular-nums font-semibold", totals.balanceDue > 0 ? "text-risk-high" : "text-risk-normal")}>
                             {formatCurrency(totals.balanceDue)}
                           </span>
                         </span>
@@ -524,18 +524,18 @@ function PosCheckout() {
               <EmptyState title="No invoice selected" description="Pick an account from the list to take a payment." />
             ) : (
               <div className="space-y-3">
-                <div className="rounded-lg border border-white/10 bg-white/[0.02] p-3">
-                  <p className="font-mono text-[11px] text-slate-400">{selected.invoiceNumber}</p>
-                  <p className="mt-1 text-sm font-semibold text-white">
+                <div className="rounded-lg border border-rule bg-paper p-3">
+                  <p className="font-mono text-[11px] text-ink-500">{selected.invoiceNumber}</p>
+                  <p className="mt-1 text-sm font-semibold text-ink-900">
                     {derived.patientsById.get(selected.patientId)?.name ?? "—"}
                   </p>
-                  <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-[11px] text-slate-400">
+                  <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-[11px] text-ink-500">
                     <span>
-                      Total <span className="tabular-nums text-slate-200">{formatCurrency(selectedTotals.grandTotal)}</span>
+                      Total <span className="tabular-nums text-ink-900">{formatCurrency(selectedTotals.grandTotal)}</span>
                     </span>
                     <span>
                       Balance{" "}
-                      <span className="tabular-nums font-semibold text-orange-300">
+                      <span className="tabular-nums font-semibold text-risk-high">
                         {formatCurrency(selectedTotals.balanceDue)}
                       </span>
                     </span>
@@ -572,10 +572,10 @@ function PosCheckout() {
                     <ul className="space-y-1.5">
                       {selected.transactions.map((transaction) => (
                         <li key={transaction.id} className="flex items-center justify-between gap-3 text-[11px]">
-                          <span className="text-slate-400">
+                          <span className="text-ink-500">
                             {PAYMENT_METHOD_LABELS[transaction.paymentMethod]} · {transaction.reference}
                           </span>
-                          <span className="tabular-nums text-slate-200">{formatCurrency(transaction.amountPaid)}</span>
+                          <span className="tabular-nums text-ink-900">{formatCurrency(transaction.amountPaid)}</span>
                         </li>
                       ))}
                     </ul>
@@ -597,13 +597,13 @@ function PosCheckout() {
                   </Button>
                 }
               />
-              <div className="rounded-lg border border-white/10 bg-white/[0.02] p-4">
+              <div className="rounded-lg border border-rule bg-paper p-4">
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-sm font-semibold text-white">SmartMedic Hospital</p>
-                    <p className="text-[11px] text-slate-400">Billing &amp; Revenue Cycle</p>
+                    <p className="text-sm font-semibold text-ink-900">SmartMedic Hospital</p>
+                    <p className="text-[11px] text-ink-500">Billing &amp; Revenue Cycle</p>
                   </div>
-                  <span className="sm-chip border-emerald-400/40 bg-emerald-500/10 text-emerald-200">Paid</span>
+                  <span className="sm-chip border-risk-normal/45 bg-risk-normal/[0.08] text-risk-normal">Paid</span>
                 </div>
                 <dl className="mt-4 space-y-1.5 text-[11px]">
                   {[
@@ -615,19 +615,19 @@ function PosCheckout() {
                     { label: "Processed by", value: receipt.transaction.processedBy },
                   ].map((row) => (
                     <div key={row.label} className="flex items-center justify-between gap-4">
-                      <dt className="text-slate-400">{row.label}</dt>
-                      <dd className="text-right text-slate-200">{row.value}</dd>
+                      <dt className="text-ink-500">{row.label}</dt>
+                      <dd className="text-right text-ink-900">{row.value}</dd>
                     </div>
                   ))}
                 </dl>
-                <div className="mt-4 border-t border-white/10 pt-3">
+                <div className="mt-4 border-t border-rule pt-3">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-slate-300">Amount received</span>
-                    <span className="font-semibold tabular-nums text-emerald-300">
+                    <span className="text-ink-700">Amount received</span>
+                    <span className="font-semibold tabular-nums text-risk-normal">
                       {formatCurrency(receipt.transaction.amountPaid)}
                     </span>
                   </div>
-                  <div className="mt-1 flex items-center justify-between text-[11px] text-slate-400">
+                  <div className="mt-1 flex items-center justify-between text-[11px] text-ink-500">
                     <span>Balance remaining</span>
                     <span className="tabular-nums">{formatCurrency(derived.invoiceTotals(receiptInvoice).balanceDue)}</span>
                   </div>
@@ -716,7 +716,7 @@ function Reconciliation() {
           title="Day book"
           subtitle="Every transaction recorded since midnight, newest first."
           icon={<Icon name="pos" size={18} />}
-          actions={<span className="text-[11px] text-slate-400">{formatDate(new Date().toISOString())}</span>}
+          actions={<span className="text-[11px] text-ink-500">{formatDate(new Date().toISOString())}</span>}
         />
         {todayTransactions.length === 0 ? (
           <EmptyState title="Nothing collected today" description="Take a payment at the POS counter to open the day book." />
@@ -730,15 +730,15 @@ function Reconciliation() {
               )
               .map(({ invoice, transaction }) => (
                 <tr key={transaction.id}>
-                  <td className="sm-td tabular-nums text-slate-300">{formatTime(transaction.processedAt)}</td>
-                  <td className="sm-td font-mono text-[11px] text-slate-400">{invoice.invoiceNumber}</td>
-                  <td className="sm-td text-slate-200">
+                  <td className="sm-td tabular-nums text-ink-700">{formatTime(transaction.processedAt)}</td>
+                  <td className="sm-td font-mono text-[11px] text-ink-500">{invoice.invoiceNumber}</td>
+                  <td className="sm-td text-ink-900">
                     {derived.patientsById.get(invoice.patientId)?.name ?? "—"}
                   </td>
-                  <td className="sm-td text-slate-400">{PAYMENT_METHOD_LABELS[transaction.paymentMethod]}</td>
-                  <td className="sm-td font-mono text-[11px] text-slate-400">{transaction.reference}</td>
-                  <td className="sm-td tabular-nums text-emerald-300">{formatCurrency(transaction.amountPaid)}</td>
-                  <td className="sm-td text-slate-400">
+                  <td className="sm-td text-ink-500">{PAYMENT_METHOD_LABELS[transaction.paymentMethod]}</td>
+                  <td className="sm-td font-mono text-[11px] text-ink-500">{transaction.reference}</td>
+                  <td className="sm-td tabular-nums text-risk-normal">{formatCurrency(transaction.amountPaid)}</td>
+                  <td className="sm-td text-ink-500">
                     {derived.staffById.get(transaction.processedBy)?.fullName ?? transaction.processedBy}
                   </td>
                 </tr>
@@ -755,17 +755,17 @@ function Reconciliation() {
             const patient = derived.patientsById.get(invoice.patientId);
             return (
               <tr key={invoice.id}>
-                <td className="sm-td font-mono text-[11px] text-slate-400">{invoice.invoiceNumber}</td>
-                <td className="sm-td text-slate-200">
-                  {patient?.name ?? "—"} <span className="text-[10px] text-slate-500">{patient?.mrn}</span>
+                <td className="sm-td font-mono text-[11px] text-ink-500">{invoice.invoiceNumber}</td>
+                <td className="sm-td text-ink-900">
+                  {patient?.name ?? "—"} <span className="text-[10px] text-ink-400">{patient?.mrn}</span>
                 </td>
-                <td className="sm-td text-slate-400">{formatDate(invoice.createdAt)}</td>
-                <td className="sm-td tabular-nums text-slate-400">{invoice.items.length}</td>
-                <td className="sm-td tabular-nums text-slate-300">{formatCurrency(totals.subtotal)}</td>
-                <td className="sm-td tabular-nums text-slate-400">{formatCurrency(totals.taxAmount)}</td>
-                <td className="sm-td tabular-nums font-semibold text-slate-100">{formatCurrency(totals.grandTotal)}</td>
-                <td className="sm-td tabular-nums text-emerald-300">{formatCurrency(totals.amountPaid)}</td>
-                <td className={cx("sm-td tabular-nums", totals.balanceDue > 0 ? "text-orange-300" : "text-slate-500")}>
+                <td className="sm-td text-ink-500">{formatDate(invoice.createdAt)}</td>
+                <td className="sm-td tabular-nums text-ink-500">{invoice.items.length}</td>
+                <td className="sm-td tabular-nums text-ink-700">{formatCurrency(totals.subtotal)}</td>
+                <td className="sm-td tabular-nums text-ink-500">{formatCurrency(totals.taxAmount)}</td>
+                <td className="sm-td tabular-nums font-semibold text-ink-900">{formatCurrency(totals.grandTotal)}</td>
+                <td className="sm-td tabular-nums text-risk-normal">{formatCurrency(totals.amountPaid)}</td>
+                <td className={cx("sm-td tabular-nums", totals.balanceDue > 0 ? "text-risk-high" : "text-ink-400")}>
                   {formatCurrency(totals.balanceDue)}
                 </td>
                 <td className="sm-td">

@@ -4,54 +4,98 @@ export default {
   theme: {
     extend: {
       colors: {
+        /* Page background and the sheet that sits on it. */
+        canvas: "#eef0f2",
+        paper: {
+          DEFAULT: "#ffffff",
+          tint: "#fafaf8",
+        },
         surface: {
-          900: "#070d1a",
-          800: "#0c1424",
-          700: "#121c30",
-          600: "#1a2740",
-          500: "#25344f",
+          DEFAULT: "#ffffff",
+          700: "#f7f8f9",
+          800: "#ffffff",
+          900: "#eef0f2",
         },
+        /* Hairline rules: the backbone of a printed form. */
+        rule: {
+          DEFAULT: "#c9ccd2",
+          soft: "#e3e5e9",
+          strong: "#98a0a8",
+        },
+        /* Text ramp. */
+        ink: {
+          900: "#14181d",
+          700: "#3a4048",
+          500: "#5c636d",
+          400: "#6b7280",
+          300: "#a1a7af",
+        },
+        /* Institutional navy: the single accent the whole system shares. */
         accent: {
-          DEFAULT: "#22d3ee",
-          soft: "#67e8f9",
-          deep: "#0e7490",
+          DEFAULT: "#14416b",
+          soft: "#e9eff5",
+          deep: "#0c2c4a",
         },
+        /* Muted, print-safe severity ramp. */
         risk: {
-          critical: "#f43f5e",
-          high: "#fb923c",
-          moderate: "#facc15",
-          normal: "#34d399",
+          critical: "#a4232b",
+          high: "#a1590f",
+          moderate: "#8a6a06",
+          normal: "#1c6b3c",
         },
       },
       fontFamily: {
         sans: [
-          "ui-sans-serif",
-          "system-ui",
           "-apple-system",
+          "BlinkMacSystemFont",
           "Segoe UI",
           "Roboto",
           "Helvetica Neue",
           "Arial",
           "sans-serif",
         ],
-        mono: ["ui-monospace", "SFMono-Regular", "Consolas", "Liberation Mono", "monospace"],
+        serif: [
+          "Iowan Old Style",
+          "Palatino Linotype",
+          "Palatino",
+          "Book Antiqua",
+          "Georgia",
+          "Times New Roman",
+          "serif",
+        ],
+        mono: ["Consolas", "SFMono-Regular", "Menlo", "Liberation Mono", "monospace"],
+      },
+      /* Squared corners throughout: a document, not a dashboard card. */
+      borderRadius: {
+        none: "0",
+        sm: "1px",
+        DEFAULT: "1px",
+        md: "2px",
+        lg: "2px",
+        xl: "2px",
+        "2xl": "3px",
+        "3xl": "3px",
+        full: "9999px",
       },
       boxShadow: {
-        panel: "0 1px 0 0 rgba(255,255,255,0.04) inset, 0 12px 30px -18px rgba(0,0,0,0.9)",
+        /* Hairline lift only; no glow, no blur haze. */
+        panel: "0 1px 0 0 rgba(20, 24, 29, 0.03)",
+        sheet: "0 1px 2px rgba(20, 24, 29, 0.07)",
+        none: "none",
       },
       keyframes: {
         "pulse-ring": {
-          "0%, 100%": { opacity: "0.35" },
-          "50%": { opacity: "1" },
+          "0%, 100%": { opacity: "0.25" },
+          "50%": { opacity: "0.9" },
         },
         "rise-in": {
-          "0%": { opacity: "0", transform: "translateY(6px)" },
+          "0%": { opacity: "0", transform: "translateY(4px)" },
           "100%": { opacity: "1", transform: "translateY(0)" },
         },
       },
       animation: {
         "pulse-ring": "pulse-ring 2.2s ease-in-out infinite",
-        "rise-in": "rise-in 220ms ease-out both",
+        "rise-in": "rise-in 180ms ease-out both",
       },
     },
   },

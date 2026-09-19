@@ -113,7 +113,7 @@ export default function LineChart({
   if (!geometry) {
     return (
       <div
-        className="flex items-center justify-center rounded-lg border border-dashed border-white/10 text-xs text-slate-500"
+        className="flex items-center justify-center rounded-lg border border-dashed border-rule text-xs text-ink-400"
         style={{ height }}
       >
         {emptyMessage}
@@ -142,15 +142,15 @@ export default function LineChart({
             y={Math.max(PADDING.top, toY(band.max))}
             width={innerWidth}
             height={Math.max(0, Math.min(plotBottom, toY(band.min)) - Math.max(PADDING.top, toY(band.max)))}
-            fill="rgba(52,211,153,0.10)"
-            stroke="rgba(52,211,153,0.28)"
+            fill="rgba(28,107,60,0.07)"
+            stroke="rgba(28,107,60,0.35)"
             strokeDasharray="3 3"
           />
           {band.label ? (
             <text
               x={PADDING.left + 6}
               y={Math.max(PADDING.top + 12, toY(band.max) + 13)}
-              className="fill-emerald-300/80"
+              className="fill-risk-normal"
               style={{ fontSize: 10, letterSpacing: "0.04em" }}
             >
               {band.label}
@@ -167,7 +167,7 @@ export default function LineChart({
             x2={PADDING.left + innerWidth}
             y1={toY(tick)}
             y2={toY(tick)}
-            stroke="rgba(148,163,184,0.16)"
+            stroke="rgba(20,24,29,0.10)"
             strokeWidth={1}
             vectorEffect="non-scaling-stroke"
           />
@@ -175,7 +175,7 @@ export default function LineChart({
             x={PADDING.left - 8}
             y={toY(tick) + 3.5}
             textAnchor="end"
-            className="fill-slate-500"
+            className="fill-ink-400"
             style={{ fontSize: 11 }}
           >
             {valueFormat(tick)}
@@ -214,7 +214,7 @@ export default function LineChart({
                 cy={toY(point.value)}
                 r={activeIndex === index ? 4.5 : 3}
                 fill={item.color}
-                stroke="#0c1424"
+                stroke="#ffffff"
                 strokeWidth={1.5}
               />
             ))}
@@ -233,7 +233,7 @@ export default function LineChart({
               x={toX(index)}
               y={height - 12}
               textAnchor={anchor}
-              className="fill-slate-500"
+              className="fill-ink-400"
               style={{ fontSize: 11 }}
             >
               {formatLabel(usable[0].points[index]?.label ?? "")}
@@ -267,7 +267,7 @@ export default function LineChart({
             x2={activeX}
             y1={PADDING.top}
             y2={plotBottom}
-            stroke="rgba(226,232,240,0.35)"
+            stroke="rgba(20,24,29,0.35)"
             strokeWidth={1}
             strokeDasharray="3 3"
             vectorEffect="non-scaling-stroke"
@@ -281,8 +281,8 @@ export default function LineChart({
             const boxY = Math.max(PADDING.top + 4, toY(point.value) - 26 + paths.indexOf(item) * 0);
             return (
               <g key={`tip-${item.key}`}>
-                <rect x={boxX} y={boxY} width={width} height={20} rx={5} fill="rgba(7,13,26,0.94)" stroke={item.color} />
-                <text x={boxX + 8} y={boxY + 14} className="fill-slate-200" style={{ fontSize: 11 }}>
+                <rect x={boxX} y={boxY} width={width} height={20} fill="#ffffff" stroke={item.color} />
+                <text x={boxX + 8} y={boxY + 14} className="fill-ink-900" style={{ fontSize: 11 }}>
                   {text}
                 </text>
               </g>
@@ -292,7 +292,7 @@ export default function LineChart({
             x={Math.min(Math.max(activeX, PADDING.left), PADDING.left + innerWidth)}
             y={PADDING.top + 12}
             textAnchor="middle"
-            className="fill-slate-400"
+            className="fill-ink-500"
             style={{ fontSize: 11 }}
           >
             {formatLabel(usable[0].points[activeIndex]?.label ?? "")}
@@ -306,7 +306,7 @@ export default function LineChart({
 /** Shared legend row for charts with more than one series. */
 export function ChartLegend({ series, className }: { series: { key: string; label: string; color: string }[]; className?: string }) {
   return (
-    <div className={cx("flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[11px] text-slate-400", className)}>
+    <div className={cx("flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[11px] text-ink-500", className)}>
       {series.map((item) => (
         <span key={item.key} className="inline-flex items-center gap-1.5">
           <span className="h-2 w-2 rounded-full" style={{ background: item.color }} />

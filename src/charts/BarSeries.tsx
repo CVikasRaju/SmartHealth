@@ -34,7 +34,7 @@ export function BarSeries({
   emptyMessage = "Nothing to show yet.",
 }: BarSeriesProps) {
   if (items.length === 0) {
-    return <p className="py-6 text-center text-xs text-slate-500">{emptyMessage}</p>;
+    return <p className="py-6 text-center text-xs text-ink-400">{emptyMessage}</p>;
   }
 
   const scaleMax = max ?? Math.max(...items.map((item) => item.value), 1);
@@ -46,18 +46,18 @@ export function BarSeries({
         return (
           <li key={item.key}>
             <div className="mb-1 flex items-baseline justify-between gap-3">
-              <span className="truncate text-xs font-medium text-slate-300">{item.label}</span>
-              <span className="shrink-0 text-xs font-semibold tabular-nums text-slate-100">
+              <span className="truncate text-xs font-medium text-ink-700">{item.label}</span>
+              <span className="shrink-0 text-xs font-semibold tabular-nums text-ink-900">
                 {valueFormat(item.value)}
               </span>
             </div>
-            <div className="h-2 overflow-hidden rounded-full bg-white/5">
+            <div className="h-2 overflow-hidden border border-rule-soft bg-canvas">
               <div
-                className="h-full rounded-full transition-[width] duration-500"
-                style={{ width: `${Math.max(ratio * 100, item.value > 0 ? 2 : 0)}%`, background: item.color ?? "#22d3ee" }}
+                className="h-full transition-[width] duration-500"
+                style={{ width: `${Math.max(ratio * 100, item.value > 0 ? 2 : 0)}%`, background: item.color ?? "#14416b" }}
               />
             </div>
-            {item.hint ? <p className="mt-1 text-[11px] text-slate-500">{item.hint}</p> : null}
+            {item.hint ? <p className="mt-1 text-[11px] text-ink-400">{item.hint}</p> : null}
           </li>
         );
       })}
@@ -98,7 +98,7 @@ export function Donut({
     <div className={cx("flex items-center gap-5", className)}>
       <div className="relative shrink-0" style={{ width: size, height: size }}>
         <svg viewBox={`0 0 ${size} ${size}`} className="w-full -rotate-90" role="img" aria-label="Distribution">
-          <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="rgba(148,163,184,0.12)" strokeWidth={thickness} />
+          <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="#e3e5e9" strokeWidth={thickness} />
           {total > 0
             ? segments.map((segment) => {
                 const length = (segment.value / total) * circumference;
@@ -123,9 +123,9 @@ export function Donut({
             : null}
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-2xl font-semibold tabular-nums text-white">{centerValue ?? total}</span>
+          <span className="font-serif text-2xl font-semibold tabular-nums text-ink-900">{centerValue ?? total}</span>
           {centerLabel ? (
-            <span className="text-[10px] uppercase tracking-widest text-slate-400">{centerLabel}</span>
+            <span className="text-[10px] uppercase tracking-widest text-ink-500">{centerLabel}</span>
           ) : null}
         </div>
       </div>
@@ -134,9 +134,9 @@ export function Donut({
           <li key={segment.key} className="flex items-center justify-between gap-3 text-xs">
             <span className="inline-flex min-w-0 items-center gap-2">
               <span className="h-2.5 w-2.5 shrink-0 rounded-sm" style={{ background: segment.color }} />
-              <span className="truncate text-slate-300">{segment.label}</span>
+              <span className="truncate text-ink-700">{segment.label}</span>
             </span>
-            <span className="shrink-0 font-semibold tabular-nums text-slate-100">{segment.value}</span>
+            <span className="shrink-0 font-semibold tabular-nums text-ink-900">{segment.value}</span>
           </li>
         ))}
       </ul>

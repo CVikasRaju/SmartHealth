@@ -288,14 +288,14 @@ export default function ReportSimplifier({
               }}
               className={cx(
                 "flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-6 py-10 text-center transition",
-                dragging ? "border-accent/70 bg-accent/[0.07]" : "border-white/15 bg-white/[0.02] hover:border-white/30",
+                dragging ? "border-accent bg-accent-soft" : "border-rule-strong bg-paper hover:border-accent/50",
               )}
             >
-              <Icon name="upload" size={26} className={dragging ? "text-accent" : "text-slate-500"} />
-              <p className="text-sm font-medium text-slate-200">
+              <Icon name="upload" size={26} className={dragging ? "text-accent" : "text-ink-400"} />
+              <p className="text-sm font-medium text-ink-900">
                 {dragging ? "Release to run extraction" : "Drag a report here, or click to browse"}
               </p>
-              <p className="text-[11px] text-slate-500">
+              <p className="text-[11px] text-ink-400">
                 Maximum {formatBytes(MAX_UPLOAD_BYTES)} · extraction runs entirely in this browser
               </p>
               <input
@@ -338,18 +338,18 @@ export default function ReportSimplifier({
           </div>
 
           {upload ? (
-            <div className="mt-4 rounded-lg border border-white/10 bg-white/[0.02] p-3">
+            <div className="mt-4 rounded-lg border border-rule bg-paper p-3">
               <div className="flex items-center justify-between gap-3 text-xs">
-                <span className="truncate text-slate-300">{upload.fileName}</span>
-                <span className="shrink-0 text-slate-500">{upload.step}</span>
+                <span className="truncate text-ink-700">{upload.fileName}</span>
+                <span className="shrink-0 text-ink-400">{upload.step}</span>
               </div>
-              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/5">
+              <div className="mt-2 h-1.5 overflow-hidden border border-rule-soft bg-canvas">
                 <div
-                  className={cx("h-full rounded-full transition-[width] duration-300", upload.error ? "bg-rose-500" : "bg-accent")}
+                  className={cx("h-full transition-[width] duration-300", upload.error ? "bg-risk-critical" : "bg-accent")}
                   style={{ width: `${Math.round(upload.ratio * 100)}%` }}
                 />
               </div>
-              {upload.error ? <p className="mt-2 text-[11px] text-rose-300">{upload.error}</p> : null}
+              {upload.error ? <p className="mt-2 text-[11px] text-risk-critical">{upload.error}</p> : null}
             </div>
           ) : null}
         </Panel>
@@ -366,8 +366,8 @@ export default function ReportSimplifier({
         <>
           {/* Report picker. */}
           <Panel padded={false}>
-            <div className="flex flex-wrap items-center gap-2 border-b border-white/10 px-4 py-3">
-              <p className="mr-auto text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+            <div className="flex flex-wrap items-center gap-2 border-b border-rule px-4 py-3">
+              <p className="mr-auto text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-500">
                 Report history · {reports.length} document{reports.length === 1 ? "" : "s"}
               </p>
               {reports.map((report) => (
@@ -381,8 +381,8 @@ export default function ReportSimplifier({
                   className={cx(
                     "rounded-lg border px-3 py-1.5 text-[11px] transition",
                     report.id === selected?.id
-                      ? "border-accent/40 bg-accent/10 text-accent"
-                      : "border-white/10 bg-white/[0.02] text-slate-400 hover:border-white/25 hover:text-slate-200",
+                      ? "border-accent/45 bg-accent-soft text-accent"
+                      : "border-rule bg-paper text-ink-500 hover:border-rule-strong hover:text-ink-900",
                   )}
                 >
                   {formatDate(report.reportDate)}
@@ -395,8 +395,8 @@ export default function ReportSimplifier({
                 {/* Document header. */}
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div className="min-w-0">
-                    <h3 className="text-sm font-semibold text-white">{selected.fileName}</h3>
-                    <p className="mt-0.5 text-[11px] text-slate-400">
+                    <h3 className="text-sm font-semibold text-ink-900">{selected.fileName}</h3>
+                    <p className="mt-0.5 text-[11px] text-ink-500">
                       {REPORT_CATEGORY_LABELS[selected.reportCategory]} · collected {formatDate(selected.reportDate)} ·{" "}
                       {formatBytes(selected.fileSizeBytes)} · uploaded by{" "}
                       {selected.uploadedByRole === "patient" ? "patient portal" : selected.uploadedByRole}
@@ -406,8 +406,8 @@ export default function ReportSimplifier({
                     <Chip
                       token={{
                         label: `${Math.round(selected.ocrConfidence * 100)}% matched`,
-                        chip: "border-sky-400/40 bg-sky-500/10 text-sky-200",
-                        hex: "#38bdf8",
+                        chip: "border-accent/45 bg-accent-soft text-accent",
+                        hex: "#14416b",
                         rank: 0,
                       }}
                     />
@@ -423,9 +423,9 @@ export default function ReportSimplifier({
                 </div>
 
                 {/* Mandatory disclaimer. */}
-                <div className="rounded-lg border border-amber-400/30 bg-amber-500/[0.08] p-3">
-                  <p className="flex items-start gap-2 text-[11px] leading-relaxed text-amber-100">
-                    <Icon name="info" size={14} className="mt-0.5 shrink-0 text-amber-300" />
+                <div className="rounded-lg border border-risk-moderate/50 bg-risk-moderate/[0.08] p-3">
+                  <p className="flex items-start gap-2 text-[11px] leading-relaxed text-risk-moderate">
+                    <Icon name="info" size={14} className="mt-0.5 shrink-0 text-risk-moderate" />
                     <span>
                       <strong className="font-semibold">Educational summary, not a diagnosis.</strong>{" "}
                       {MEDICAL_DISCLAIMER}
@@ -433,7 +433,7 @@ export default function ReportSimplifier({
                   </p>
                 </div>
 
-                <p className="text-sm font-medium text-slate-100">{summary.headline}</p>
+                <p className="text-sm font-medium text-ink-900">{summary.headline}</p>
 
                 <div className="grid gap-3 sm:grid-cols-4">
                   <StatTile label="Values recognised" value={summary.total} />
@@ -445,7 +445,7 @@ export default function ReportSimplifier({
                 {/* Grouped results. */}
                 {groupFieldsByCategory(selected.extractedFields).map((group) => (
                   <div key={group.category}>
-                    <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                    <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-500">
                       {BIOMARKER_CATEGORY_LABELS[group.category]}
                     </p>
                     <ul className="space-y-2">
@@ -453,7 +453,7 @@ export default function ReportSimplifier({
                         const token = BIOMARKER_STATUS_TOKENS[field.status];
                         const isOpen = expandedFieldId === field.id;
                         return (
-                          <li key={field.id} className="rounded-lg border border-white/10 bg-white/[0.02]">
+                          <li key={field.id} className="rounded-lg border border-rule bg-paper">
                             <button
                               type="button"
                               onClick={() => setExpandedFieldId(isOpen ? null : field.id)}
@@ -461,32 +461,32 @@ export default function ReportSimplifier({
                             >
                               <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: token.hex }} />
                               <span className="min-w-0 flex-1">
-                                <span className="block truncate text-xs font-medium text-slate-100">
+                                <span className="block truncate text-xs font-medium text-ink-900">
                                   {field.testName}
                                 </span>
-                                <span className="block text-[10px] text-slate-500">
+                                <span className="block text-[10px] text-ink-400">
                                   Reference {field.referenceRange.text}
                                 </span>
                               </span>
                               <span className="shrink-0 text-right">
-                                <span className="block text-sm font-semibold tabular-nums text-white">
+                                <span className="block text-sm font-semibold tabular-nums text-ink-900">
                                   {formatNumber(field.value, field.value % 1 === 0 ? 0 : 2)}
-                                  <span className="ml-1 text-[10px] font-normal text-slate-400">{field.unit}</span>
+                                  <span className="ml-1 text-[10px] font-normal text-ink-500">{field.unit}</span>
                                 </span>
                                 <span className={cx("sm-chip mt-1", token.chip)}>{token.label}</span>
                               </span>
                               <Icon
                                 name="chevronDown"
                                 size={14}
-                                className={cx("shrink-0 text-slate-500 transition", isOpen && "rotate-180")}
+                                className={cx("shrink-0 text-ink-400 transition", isOpen && "rotate-180")}
                               />
                             </button>
                             {isOpen ? (
-                              <div className="border-t border-white/10 px-3 py-3">
-                                <p className="text-[11px] leading-relaxed text-slate-300">
+                              <div className="border-t border-rule px-3 py-3">
+                                <p className="text-[11px] leading-relaxed text-ink-700">
                                   {field.plainLanguageExplanation}
                                 </p>
-                                <p className="mt-2 text-[10px] text-slate-500">
+                                <p className="mt-2 text-[10px] text-ink-400">
                                   Matched alias “{field.matchedAlias}” · extraction confidence{" "}
                                   {(field.confidence * 100).toFixed(0)}%
                                 </p>
@@ -506,7 +506,7 @@ export default function ReportSimplifier({
                     {showRawText ? "Hide raw extracted text" : "Show raw extracted text"}
                   </Button>
                   {showRawText ? (
-                    <pre className="mt-2 max-h-64 overflow-auto rounded-lg border border-white/10 bg-surface-900/70 p-3 text-[11px] leading-relaxed text-slate-400">
+                    <pre className="mt-2 max-h-64 overflow-auto border border-rule-soft bg-canvas p-3 font-mono text-[11px] leading-relaxed text-ink-700">
                       {selected.rawOcrText}
                     </pre>
                   ) : null}
@@ -514,9 +514,9 @@ export default function ReportSimplifier({
 
                 {/* Physician note. */}
                 {canAnnotate ? (
-                  <div className="no-print rounded-lg border border-white/10 bg-white/[0.02] p-3">
+                  <div className="no-print rounded-lg border border-rule bg-paper p-3">
                     <div className="flex items-center justify-between gap-3">
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-500">
                         Physician note
                       </p>
                       {!editingNote ? (
@@ -557,17 +557,17 @@ export default function ReportSimplifier({
                         </div>
                       </div>
                     ) : (
-                      <p className="mt-1.5 text-xs leading-relaxed text-slate-300">
+                      <p className="mt-1.5 text-xs leading-relaxed text-ink-700">
                         {selected.doctorNotes || "No physician note recorded yet."}
                       </p>
                     )}
                   </div>
                 ) : selected.doctorNotes ? (
-                  <div className="rounded-lg border border-white/10 bg-white/[0.02] p-3">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                  <div className="rounded-lg border border-rule bg-paper p-3">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-500">
                       Physician note
                     </p>
-                    <p className="mt-1.5 text-xs leading-relaxed text-slate-300">{selected.doctorNotes}</p>
+                    <p className="mt-1.5 text-xs leading-relaxed text-ink-700">{selected.doctorNotes}</p>
                   </div>
                 ) : null}
               </div>
@@ -601,13 +601,13 @@ export default function ReportSimplifier({
                         className={cx(
                           "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] transition",
                           isActive
-                            ? "border-accent/50 bg-accent/10 text-accent"
-                            : "border-white/10 bg-white/[0.02] text-slate-400 hover:border-white/25 hover:text-slate-200",
+                            ? "border-accent/60 bg-accent-soft text-accent"
+                            : "border-rule bg-paper text-ink-500 hover:border-rule-strong hover:text-ink-900",
                         )}
                       >
                         <span className="h-1.5 w-1.5 rounded-full" style={{ background: token.hex }} />
                         {trend.testName}
-                        <span className="text-slate-500">{trend.history.length}</span>
+                        <span className="text-ink-400">{trend.history.length}</span>
                       </button>
                     );
                   })}
@@ -641,15 +641,15 @@ export default function ReportSimplifier({
                     </div>
 
                     <div className="space-y-3">
-                      <div className="rounded-lg border border-white/10 bg-white/[0.02] p-3">
-                        <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                      <div className="rounded-lg border border-rule bg-paper p-3">
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-500">
                           Movement
                         </p>
                         <p className="mt-1.5 flex items-baseline gap-2">
-                          <span className="text-2xl font-semibold tabular-nums text-white">
+                          <span className="text-2xl font-semibold tabular-nums text-ink-900">
                             {formatNumber(activeTrend.latest, activeTrend.latest % 1 === 0 ? 0 : 2)}
                           </span>
-                          <span className="text-xs text-slate-400">{activeTrend.unit}</span>
+                          <span className="text-xs text-ink-500">{activeTrend.unit}</span>
                           <Chip token={BIOMARKER_STATUS_TOKENS[activeTrend.status]} />
                         </p>
                         {activeTrend.delta !== null ? (
@@ -657,10 +657,10 @@ export default function ReportSimplifier({
                             className={cx(
                               "mt-1 text-xs tabular-nums",
                               activeTrend.direction === "stable"
-                                ? "text-slate-400"
+                                ? "text-ink-500"
                                 : activeTrend.direction === "rising"
-                                  ? "text-orange-300"
-                                  : "text-sky-300",
+                                  ? "text-risk-high"
+                                  : "text-accent",
                             )}
                           >
                             {activeTrend.delta > 0 ? "+" : ""}
@@ -671,15 +671,15 @@ export default function ReportSimplifier({
                         ) : null}
                       </div>
 
-                      <div className="rounded-lg border border-white/10 bg-white/[0.02] p-3">
-                        <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                      <div className="rounded-lg border border-rule bg-paper p-3">
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-500">
                           Direction of travel
                         </p>
-                        <p className="mt-1.5 text-xs leading-relaxed text-slate-300">{describeTrend(activeTrend)}</p>
+                        <p className="mt-1.5 text-xs leading-relaxed text-ink-700">{describeTrend(activeTrend)}</p>
                       </div>
 
-                      <div className="rounded-lg border border-white/10 bg-white/[0.02] p-3">
-                        <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                      <div className="rounded-lg border border-rule bg-paper p-3">
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-500">
                           Reading history
                         </p>
                         <ul className="mt-2 space-y-1.5">
@@ -691,8 +691,8 @@ export default function ReportSimplifier({
                                 key={`${point.reportId}-${point.date}`}
                                 className="flex items-center justify-between text-[11px]"
                               >
-                                <span className="text-slate-400">{formatDate(point.date)}</span>
-                                <span className="tabular-nums text-slate-200">
+                                <span className="text-ink-500">{formatDate(point.date)}</span>
+                                <span className="tabular-nums text-ink-900">
                                   {point.value} {activeTrend.unit}
                                 </span>
                               </li>
@@ -700,7 +700,7 @@ export default function ReportSimplifier({
                         </ul>
                       </div>
 
-                      <p className="text-[10px] leading-relaxed text-slate-500">
+                      <p className="text-[10px] leading-relaxed text-ink-400">
                         Trendlines compare recorded values against the reference range only. They do not establish a
                         prognosis or a cause.
                       </p>

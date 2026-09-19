@@ -148,29 +148,29 @@ function OutpatientQueue() {
               const token = APPOINTMENT_STATUS_TOKENS[appointment.status];
 
               return (
-                <li key={appointment.id} className="rounded-xl border border-white/10 bg-white/[0.02] p-4">
+                <li key={appointment.id} className="rounded-xl border border-rule bg-paper p-4">
                   <div className="flex flex-wrap items-start gap-4">
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="text-sm font-semibold text-white">{patient?.name ?? "Unknown patient"}</h3>
-                        <span className="font-mono text-[10px] text-slate-500">{patient?.mrn}</span>
+                        <h3 className="text-sm font-semibold text-ink-900">{patient?.name ?? "Unknown patient"}</h3>
+                        <span className="font-mono text-[10px] text-ink-400">{patient?.mrn}</span>
                         <Chip token={token} />
-                        <span className="sm-chip border-white/15 bg-white/5 text-slate-300">{appointment.acuity}</span>
+                        <span className="sm-chip border-rule-strong bg-paper text-ink-700">{appointment.acuity}</span>
                       </div>
-                      <p className="mt-1 text-xs text-slate-300">{appointment.reason}</p>
-                      <p className="mt-1 text-[11px] text-slate-500">
+                      <p className="mt-1 text-xs text-ink-700">{appointment.reason}</p>
+                      <p className="mt-1 text-[11px] text-ink-400">
                         {formatDateTime(appointment.scheduledFor)} · {appointment.department} ·{" "}
                         {patient ? `${ageFromDob(patient.dob)}y ${patient.gender} · ${patient.bloodGroup}` : ""}
                       </p>
                       {appointment.triageNotes ? (
-                        <p className="mt-2 rounded-lg border border-white/10 bg-white/[0.02] p-2 text-[11px] leading-relaxed text-slate-400">
-                          <span className="font-semibold text-slate-300">Triage: </span>
+                        <p className="mt-2 rounded-lg border border-rule bg-paper p-2 text-[11px] leading-relaxed text-ink-500">
+                          <span className="font-semibold text-ink-700">Triage: </span>
                           {appointment.triageNotes}
                         </p>
                       ) : null}
                       {patient && patient.allergies.length > 0 && patient.allergies[0].allergen !== "None recorded" ? (
                         <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                          <span className="text-[10px] uppercase tracking-wider text-slate-500">Allergies</span>
+                          <span className="text-[10px] uppercase tracking-wider text-ink-400">Allergies</span>
                           {patient.allergies.map((allergy) => (
                             <Chip key={allergy.allergen} token={SEVERITY_TOKENS[allergy.severity]}>
                               {allergy.allergen}
@@ -179,8 +179,8 @@ function OutpatientQueue() {
                         </div>
                       ) : null}
                       {reportSummary ? (
-                        <p className="mt-2 text-[11px] text-slate-400">
-                          <span className="font-semibold text-slate-300">Latest panel:</span>{" "}
+                        <p className="mt-2 text-[11px] text-ink-500">
+                          <span className="font-semibold text-ink-700">Latest panel:</span>{" "}
                           {formatDate(report!.reportDate)} · {reportSummary.outOfRange} of {reportSummary.total} values
                           outside range
                           {reportSummary.critical > 0 ? ` · ${reportSummary.critical} markedly abnormal` : ""}
@@ -403,7 +403,7 @@ function CpoeConsole() {
           subtitle="Allergies and stock guards are evaluated against this record."
           icon={<Icon name="user" size={18} />}
           actions={
-            <span className="text-[11px] text-slate-400">{doctor?.fullName ?? "Clinician"}</span>
+            <span className="text-[11px] text-ink-500">{doctor?.fullName ?? "Clinician"}</span>
           }
         />
         {!patient ? (
@@ -412,35 +412,35 @@ function CpoeConsole() {
           <div className="space-y-4">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
-                <h3 className="text-base font-semibold text-white">{patient.name}</h3>
-                <p className="mt-0.5 text-xs text-slate-400">
+                <h3 className="text-base font-semibold text-ink-900">{patient.name}</h3>
+                <p className="mt-0.5 text-xs text-ink-500">
                   {patient.mrn} · {ageFromDob(patient.dob)}y {patient.gender} · {patient.bloodGroup} ·{" "}
                   {patient.contact}
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
                 {patient.currentAdmission.isAdmitted ? (
-                  <span className="sm-chip border-sky-400/40 bg-sky-500/10 text-sky-200">
+                  <span className="sm-chip border-accent/45 bg-accent-soft text-accent">
                     Admitted · {patient.currentAdmission.ward} {patient.currentAdmission.bedNumber}
                   </span>
                 ) : (
-                  <span className="sm-chip border-white/15 bg-white/5 text-slate-300">Outpatient</span>
+                  <span className="sm-chip border-rule-strong bg-paper text-ink-700">Outpatient</span>
                 )}
               </div>
             </div>
 
             <div className="grid gap-4 lg:grid-cols-3">
-              <div className="rounded-lg border border-white/10 bg-white/[0.02] p-3">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+              <div className="rounded-lg border border-rule bg-paper p-3">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-500">
                   Recorded allergies
                 </p>
                 {patientAllergens.length === 0 ? (
-                  <p className="mt-1.5 text-xs text-slate-400">No known drug allergies recorded.</p>
+                  <p className="mt-1.5 text-xs text-ink-500">No known drug allergies recorded.</p>
                 ) : (
                   <ul className="mt-2 space-y-1.5">
                     {patient.allergies.map((allergy) => (
                       <li key={allergy.allergen} className="flex items-start justify-between gap-2">
-                        <span className="text-xs text-slate-200">{allergy.allergen}</span>
+                        <span className="text-xs text-ink-900">{allergy.allergen}</span>
                         <Chip token={SEVERITY_TOKENS[allergy.severity]} />
                       </li>
                     ))}
@@ -448,46 +448,46 @@ function CpoeConsole() {
                 )}
               </div>
 
-              <div className="rounded-lg border border-white/10 bg-white/[0.02] p-3">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+              <div className="rounded-lg border border-rule bg-paper p-3">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-500">
                   Chronic conditions
                 </p>
                 <ul className="mt-2 space-y-1">
                   {patient.chronicConditions.map((condition) => (
-                    <li key={condition} className="text-xs text-slate-300">
+                    <li key={condition} className="text-xs text-ink-700">
                       {condition}
                     </li>
                   ))}
                 </ul>
               </div>
 
-              <div className="rounded-lg border border-white/10 bg-white/[0.02] p-3">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+              <div className="rounded-lg border border-rule bg-paper p-3">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-500">
                   Latest simplified panel
                 </p>
                 {recentReports.length === 0 ? (
-                  <p className="mt-1.5 text-xs text-slate-400">No laboratory report on file.</p>
+                  <p className="mt-1.5 text-xs text-ink-500">No laboratory report on file.</p>
                 ) : (
                   (() => {
                     const report = recentReports[0];
                     const summary = summariseFields(report.extractedFields);
                     return (
                       <div className="mt-2">
-                        <p className="text-xs text-slate-300">{summary.headline}</p>
+                        <p className="text-xs text-ink-700">{summary.headline}</p>
                         <ul className="mt-2 space-y-1">
                           {report.extractedFields
                             .filter((field) => field.status === "elevated" || field.status === "low" || field.status.startsWith("critical"))
                             .slice(0, 4)
                             .map((field) => (
                               <li key={field.id} className="flex items-center justify-between gap-2 text-[11px]">
-                                <span className="truncate text-slate-400">{field.testName}</span>
-                                <span className="shrink-0 tabular-nums text-slate-200">
+                                <span className="truncate text-ink-500">{field.testName}</span>
+                                <span className="shrink-0 tabular-nums text-ink-900">
                                   {field.value} {field.unit}
                                 </span>
                               </li>
                             ))}
                         </ul>
-                        <p className="mt-2 text-[10px] text-slate-500">{formatDate(report.reportDate)}</p>
+                        <p className="mt-2 text-[10px] text-ink-400">{formatDate(report.reportDate)}</p>
                       </div>
                     );
                   })()
@@ -556,10 +556,10 @@ function CpoeConsole() {
                 className={cx(
                   "rounded-xl border p-4",
                   conflicts.length > 0
-                    ? "border-rose-400/40 bg-rose-500/[0.06]"
+                    ? "border-risk-critical/45 bg-risk-critical/[0.05]"
                     : criticalCover
-                      ? "border-orange-400/30 bg-orange-500/[0.05]"
-                      : "border-white/10 bg-white/[0.02]",
+                      ? "border-risk-high/45 bg-risk-high/[0.05]"
+                      : "border-rule bg-paper",
                 )}
               >
                 <div className="flex flex-wrap items-start justify-between gap-3">
@@ -631,12 +631,12 @@ function CpoeConsole() {
 
                 {/* Allergy guard. */}
                 {conflicts.length > 0 ? (
-                  <div className="mt-3 rounded-lg border border-rose-400/40 bg-rose-500/10 p-3">
-                    <p className="flex items-center gap-2 text-xs font-semibold text-rose-100">
+                  <div className="mt-3 rounded-lg border border-risk-critical/45 bg-risk-critical/[0.08] p-3">
+                    <p className="flex items-center gap-2 text-xs font-semibold text-risk-critical">
                       <Icon name="alert" size={14} />
                       Allergy conflict
                     </p>
-                    <p className="mt-1 text-[11px] leading-relaxed text-rose-100/90">
+                    <p className="mt-1 text-[11px] leading-relaxed text-risk-critical/90">
                       {patient?.name} has a{" "}
                       {patient?.allergies.find((item) => item.allergen === conflicts[0].allergen)?.severity} recorded
                       allergy to <strong>{conflicts[0].allergen}</strong>, and this molecule shares the{" "}
@@ -650,41 +650,41 @@ function CpoeConsole() {
                   <div className="mt-3 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-center">
                     <div>
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-[11px] text-slate-400">Live stock guard</span>
+                        <span className="text-[11px] text-ink-500">Live stock guard</span>
                         <Chip token={RISK_TOKENS[assessment.tier]} />
                         {outOfStock ? (
-                          <span className="sm-chip border-rose-400/40 bg-rose-500/15 text-rose-200">Stocked out</span>
+                          <span className="sm-chip border-risk-critical/45 bg-risk-critical/[0.12] text-risk-critical">Stocked out</span>
                         ) : criticalCover ? (
-                          <span className="sm-chip border-orange-400/40 bg-orange-500/15 text-orange-200">
+                          <span className="sm-chip border-risk-high/45 bg-risk-high/[0.12] text-risk-high">
                             Under 3 days cover
                           </span>
                         ) : null}
                       </div>
-                      <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-[11px] text-slate-400">
+                      <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-[11px] text-ink-500">
                         <span>
                           Cover{" "}
-                          <span className={cx("font-semibold tabular-nums", flagging ? "text-orange-300" : "text-slate-200")}>
+                          <span className={cx("font-semibold tabular-nums", flagging ? "text-risk-high" : "text-ink-900")}>
                             {formatDays(assessment.dir)} days
                           </span>
                         </span>
                         <span>
-                          Available <span className="tabular-nums text-slate-200">{assessment.availableStock}</span>{" "}
+                          Available <span className="tabular-nums text-ink-900">{assessment.availableStock}</span>{" "}
                           {medicine.unit}
                         </span>
                         <span>
-                          SPS <span className="tabular-nums text-slate-200">{assessment.sps}</span>
+                          SPS <span className="tabular-nums text-ink-900">{assessment.sps}</span>
                         </span>
                         <span>
-                          Dispensing <span className="tabular-nums text-slate-200">{computeQuantity(medicine, line.frequency, line.durationDays)}</span>{" "}
+                          Dispensing <span className="tabular-nums text-ink-900">{computeQuantity(medicine, line.frequency, line.durationDays)}</span>{" "}
                           {medicine.unit}
                         </span>
                       </div>
                       {!criticalCover && !flagging ? (
-                        <p className="mt-2 text-[11px] text-emerald-300">
+                        <p className="mt-2 text-[11px] text-risk-normal">
                           Cover is adequate for this course; no substitution required.
                         </p>
                       ) : (
-                        <p className="mt-2 text-[11px] leading-relaxed text-orange-200">
+                        <p className="mt-2 text-[11px] leading-relaxed text-risk-high">
                           This course consumes{" "}
                           {(
                             (computeQuantity(medicine, line.frequency, line.durationDays) /
@@ -708,7 +708,7 @@ function CpoeConsole() {
 
                 {/* Alternatives. */}
                 {medicine && alternatives.length > 0 && (flagging || conflicts.length > 0) ? (
-                  <div className="mt-3 rounded-lg border border-accent/25 bg-accent/[0.06] p-3">
+                  <div className="mt-3 rounded-lg border border-accent/35 bg-accent-soft p-3">
                     <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-accent/90">
                       In-stock therapeutic equivalents
                     </p>
@@ -716,11 +716,11 @@ function CpoeConsole() {
                       {alternatives.map((entry) => (
                         <li key={entry.medicine.id} className="flex flex-wrap items-center justify-between gap-2">
                           <span className="min-w-0">
-                            <span className="block text-xs text-slate-100">
+                            <span className="block text-xs text-ink-900">
                               {entry.medicine.brandName}{" "}
-                              <span className="text-slate-500">· {entry.medicine.genericName}</span>
+                              <span className="text-ink-400">· {entry.medicine.genericName}</span>
                             </span>
-                            <span className="block text-[10px] text-slate-400">
+                            <span className="block text-[10px] text-ink-500">
                               {formatDays(entry.assessment.dir)} days cover · SPS {entry.assessment.sps} ·{" "}
                               {entry.assessment.availableStock} {entry.medicine.unit} available
                             </span>
@@ -744,7 +744,7 @@ function CpoeConsole() {
                 ) : null}
 
                 {line.substituteFor ? (
-                  <p className="mt-2 text-[11px] text-emerald-300">
+                  <p className="mt-2 text-[11px] text-risk-normal">
                     Substitution recorded:{" "}
                     {derived.medicinesById.get(line.substituteFor)?.brandName ?? line.substituteFor} was replaced for
                     this patient.
@@ -756,11 +756,11 @@ function CpoeConsole() {
         </div>
 
         {error ? (
-          <p className="mt-4 rounded-lg border border-rose-400/40 bg-rose-500/10 p-3 text-xs text-rose-100">{error}</p>
+          <p className="mt-4 rounded-lg border border-risk-critical/45 bg-risk-critical/[0.08] p-3 text-xs text-risk-critical">{error}</p>
         ) : null}
 
         <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
-          <p className="max-w-xl text-[11px] leading-relaxed text-slate-500">
+          <p className="max-w-xl text-[11px] leading-relaxed text-ink-400">
             Charting a prescription dispenses the course immediately and re-runs the shortage forecast, so the supply
             board and the nurse's eMAR sheet both move the moment this is signed.
           </p>
@@ -785,12 +785,12 @@ function CpoeConsole() {
               const now = derived.assessmentById.get(line.medicineId);
               return (
                 <tr key={line.id}>
-                  <td className="sm-td font-medium text-slate-100">{line.drugName}</td>
-                  <td className="sm-td text-slate-400">{line.dosage}</td>
-                  <td className="sm-td text-slate-400">{FREQUENCY_LABELS[line.frequency]}</td>
-                  <td className="sm-td text-slate-400">{line.durationDays} day(s)</td>
-                  <td className="sm-td tabular-nums text-slate-200">{line.quantity}</td>
-                  <td className="sm-td tabular-nums text-slate-400">{before?.sps ?? "—"}</td>
+                  <td className="sm-td font-medium text-ink-900">{line.drugName}</td>
+                  <td className="sm-td text-ink-500">{line.dosage}</td>
+                  <td className="sm-td text-ink-500">{FREQUENCY_LABELS[line.frequency]}</td>
+                  <td className="sm-td text-ink-500">{line.durationDays} day(s)</td>
+                  <td className="sm-td tabular-nums text-ink-900">{line.quantity}</td>
+                  <td className="sm-td tabular-nums text-ink-500">{before?.sps ?? "—"}</td>
                   <td className="sm-td tabular-nums">
                     <span style={{ color: now ? RISK_TOKENS[now.tier].hex : undefined }}>{now?.sps ?? "—"}</span>
                   </td>
@@ -798,7 +798,7 @@ function CpoeConsole() {
               );
             })}
           </DataTable>
-          <p className="mt-3 text-[11px] leading-relaxed text-slate-500">
+          <p className="mt-3 text-[11px] leading-relaxed text-ink-400">
             The shortage engine was re-scored the instant the course was dispensed. {result.before.length} molecule(s)
             were affected; open the control room as an admin to see the updated forecast.
           </p>
@@ -814,17 +814,17 @@ function CpoeConsole() {
           ) : (
             <ul className="space-y-3">
               {derived.treatmentsFor(patient.id).map((treatment) => (
-                <li key={treatment.id} className="rounded-lg border border-white/10 bg-white/[0.02] p-3">
+                <li key={treatment.id} className="rounded-lg border border-rule bg-paper p-3">
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <p className="text-xs font-semibold text-slate-100">{treatment.diagnosis}</p>
-                    <span className="font-mono text-[10px] text-slate-500">
+                    <p className="text-xs font-semibold text-ink-900">{treatment.diagnosis}</p>
+                    <span className="font-mono text-[10px] text-ink-400">
                       {treatment.icd10Code} · {formatDate(treatment.createdAt)}
                     </span>
                   </div>
-                  <p className="mt-1 text-[11px] text-slate-400">
+                  <p className="mt-1 text-[11px] text-ink-500">
                     {treatment.prescriptions.map((line) => `${line.drugName} (${line.quantity})`).join(" · ")}
                   </p>
-                  {treatment.notes ? <p className="mt-1 text-[11px] text-slate-500">{treatment.notes}</p> : null}
+                  {treatment.notes ? <p className="mt-1 text-[11px] text-ink-400">{treatment.notes}</p> : null}
                 </li>
               ))}
             </ul>
@@ -867,7 +867,7 @@ function DoctorReports() {
                 series={trends.slice(0, 4).map((trend, index) => ({
                   key: trend.normalizedKey,
                   label: `${trend.testName} (${trend.unit})`,
-                  color: ["#22d3ee", "#fb923c", "#a78bfa", "#34d399"][index % 4],
+                  color: ["#14416b", "#a1590f", "#5a3a7a", "#1c6b3c"][index % 4],
                   points: trend.history.map((point) => ({
                     label: formatDate(point.date),
                     value: point.value,
@@ -883,7 +883,7 @@ function DoctorReports() {
                   </Chip>
                 ))}
               </div>
-              <p className="mt-3 text-[11px] leading-relaxed text-slate-500">
+              <p className="mt-3 text-[11px] leading-relaxed text-ink-400">
                 Values are plotted on a shared axis for shape comparison only; each biomarker has its own reference
                 range. {MEDICAL_DISCLAIMER}
               </p>

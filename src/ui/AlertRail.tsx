@@ -3,7 +3,7 @@
  *
  * The engine produces a live critical/high alert per molecule; this rail is the
  * push surface for those alerts plus the pending redistribution proposals. The
- * counter in the top bar reflects unacknowledged alerts only, so acknowledging
+ * counter in the masthead reflects unacknowledged alerts only, so acknowledging
  * one genuinely clears the badge.
  */
 
@@ -36,13 +36,13 @@ export default function AlertRail() {
         aria-expanded={open}
         title="Shortage alerts"
         className={cx(
-          "relative grid h-9 w-9 place-items-center rounded-lg border transition",
-          open ? "border-accent/50 bg-accent/10 text-accent" : "border-white/12 bg-white/[0.04] text-slate-300 hover:border-white/25",
+          "relative grid h-9 w-9 place-items-center border transition",
+          open ? "border-accent bg-accent-soft text-accent" : "border-rule-strong bg-paper text-ink-500 hover:bg-canvas",
         )}
       >
         <Icon name="bell" size={17} />
         {count > 0 ? (
-          <span className="absolute -right-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white">
+          <span className="absolute -right-1.5 -top-1.5 grid h-4 min-w-4 place-items-center border border-paper bg-risk-critical px-1 text-[10px] font-bold text-white">
             {count}
           </span>
         ) : null}
@@ -52,20 +52,20 @@ export default function AlertRail() {
         <div
           role="dialog"
           aria-label="Shortage alerts"
-          className="absolute right-0 z-40 mt-2 w-[26rem] animate-rise-in overflow-hidden rounded-xl border border-white/12 bg-surface-800/98 shadow-2xl backdrop-blur"
+          className="absolute right-0 z-40 mt-2 w-[26rem] animate-rise-in overflow-hidden border border-rule-strong bg-paper shadow-sheet"
         >
-          <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
+          <div className="flex items-center justify-between border-b border-rule bg-canvas px-4 py-3">
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">Risk feed</p>
-              <p className="mt-0.5 text-[11px] text-slate-400">
-                {derived.portfolio.critical} critical · {derived.portfolio.high} high · peak SPS{" "}
+              <p className="sm-eyebrow">Risk feed</p>
+              <p className="mt-1 text-[11px] text-ink-500">
+                {derived.portfolio.critical} critical &middot; {derived.portfolio.high} high &middot; peak SPS{" "}
                 {derived.portfolio.peakScore}
               </p>
             </div>
             {canViewShortage ? (
               <Button
                 size="sm"
-                variant="ghost"
+                variant="secondary"
                 onClick={() => {
                   actions.setView(HOME_VIEW[state.session.role]);
                   setOpen(false);
@@ -76,7 +76,7 @@ export default function AlertRail() {
             ) : null}
           </div>
 
-          <div className="max-h-[26rem] space-y-3 overflow-y-auto p-3">
+          <div className="max-h-[26rem] space-y-2.5 overflow-y-auto p-3">
             {derived.alerts.length === 0 && derived.proposals.length === 0 ? (
               <EmptyState
                 title="No open alerts"
@@ -88,19 +88,16 @@ export default function AlertRail() {
               const token = RISK_TOKENS[alert.tier];
               const assessment = derived.assessmentById.get(alert.medicineId);
               return (
-                <article key={alert.id} className="rounded-lg border border-white/10 bg-white/[0.02] p-3">
+                <article key={alert.id} className="border border-rule bg-paper p-3" style={{ borderLeftWidth: 3, borderLeftColor: token.hex }}>
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="flex items-center gap-2 text-sm font-semibold text-white">
-                        <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: token.hex }} />
-                        <span className="truncate">{alert.drugName}</span>
-                      </p>
-                      <p className="mt-1 text-[11px] leading-relaxed text-slate-400">{alert.message}</p>
+                      <p className="text-sm font-semibold text-ink-900">{alert.drugName}</p>
+                      <p className="mt-1 text-[11px] leading-relaxed text-ink-500">{alert.message}</p>
                     </div>
                     <span className={cx("sm-chip shrink-0", token.chip)}>{token.label}</span>
                   </div>
                   {assessment ? (
-                    <p className="mt-2 text-[11px] text-slate-500">
+                    <p className="mt-2 border-t border-rule-soft pt-2 text-[11px] text-ink-400">
                       {assessment.strandedUnits > 0
                         ? `${assessment.strandedUnits} units stranded above ward par · ${assessment.wardsAtRisk} ward(s) under 3 days cover`
                         : `Cover ${formatDays(assessment.dir)} days against a ${assessment.dynamicLeadTimeDays.toFixed(1)}-day lead time`}
@@ -116,11 +113,9 @@ export default function AlertRail() {
             })}
 
             {derived.proposals.length > 0 ? (
-              <div className="rounded-lg border border-accent/25 bg-accent/[0.06] p-3">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-accent/90">
-                  Pending redistribution
-                </p>
-                <p className="mt-1 text-[11px] leading-relaxed text-slate-300">
+              <div className="border border-accent/40 bg-accent-soft p-3">
+                <p className="sm-eyebrow text-accent">Pending redistribution</p>
+                <p className="mt-1 text-[11px] leading-relaxed text-ink-700">
                   {derived.proposals.length} inter-ward transfer
                   {derived.proposals.length === 1 ? "" : "s"} can release stranded stock into wards that are short.
                   Approve them from the control room.

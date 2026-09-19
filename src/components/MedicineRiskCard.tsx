@@ -27,10 +27,10 @@ export interface MedicineRiskCardProps {
 }
 
 const DRIVER_COLORS: Record<string, string> = {
-  burn: "#f43f5e",
-  lead: "#fb923c",
-  regional: "#a78bfa",
-  buffer: "#facc15",
+  burn: "#a4232b",
+  lead: "#a1590f",
+  regional: "#5a3a7a",
+  buffer: "#8a6a06",
 };
 
 export default function MedicineRiskCard({
@@ -49,44 +49,44 @@ export default function MedicineRiskCard({
   const coverage = assessment.coverageByWard;
 
   return (
-    <article className={cx("sm-panel overflow-hidden", open && "ring-1 ring-inset ring-white/10")}>
+    <article className={cx("sm-panel overflow-hidden", open && "ring-1 ring-inset ring-rule")}>
       {/* Headline row. */}
       <div className="flex flex-wrap items-start gap-4 p-4">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <h3 className="text-sm font-semibold text-white">{assessment.brandName}</h3>
+            <h3 className="text-sm font-semibold text-ink-900">{assessment.brandName}</h3>
             <Chip token={token} />
-            <span className="text-[11px] text-slate-500">{assessment.sku}</span>
+            <span className="text-[11px] text-ink-400">{assessment.sku}</span>
             {medicine.controlledSubstance ? (
-              <span className="sm-chip border-violet-400/40 bg-violet-500/15 text-violet-200">Controlled</span>
+              <span className="sm-chip border-rule-strong bg-paper text-ink-700">Controlled</span>
             ) : null}
           </div>
-          <p className="mt-1 text-xs text-slate-400">
+          <p className="mt-1 text-xs text-ink-500">
             {assessment.genericName} · {medicine.strength} · {medicine.form.replace(/_/g, " ")}
           </p>
 
           <div className="mt-3 grid grid-cols-2 gap-x-6 gap-y-2 sm:grid-cols-4">
             <div>
-              <p className="text-[10px] uppercase tracking-[0.14em] text-slate-500">SPS score</p>
+              <p className="text-[10px] uppercase tracking-[0.14em] text-ink-400">SPS score</p>
               <p className="text-lg font-semibold tabular-nums" style={{ color: token.hex }}>
                 {assessment.sps}
               </p>
             </div>
             <div>
-              <p className="text-[10px] uppercase tracking-[0.14em] text-slate-500">Days of cover</p>
-              <p className="text-lg font-semibold tabular-nums text-white">{formatDays(assessment.dir)}</p>
+              <p className="text-[10px] uppercase tracking-[0.14em] text-ink-400">Days of cover</p>
+              <p className="text-lg font-semibold tabular-nums text-ink-900">{formatDays(assessment.dir)}</p>
             </div>
             <div>
-              <p className="text-[10px] uppercase tracking-[0.14em] text-slate-500">Dynamic lead time</p>
-              <p className="text-lg font-semibold tabular-nums text-slate-200">
+              <p className="text-[10px] uppercase tracking-[0.14em] text-ink-400">Dynamic lead time</p>
+              <p className="text-lg font-semibold tabular-nums text-ink-900">
                 {assessment.dynamicLeadTimeDays.toFixed(1)}d
               </p>
             </div>
             <div>
-              <p className="text-[10px] uppercase tracking-[0.14em] text-slate-500">EWMA burn rate</p>
-              <p className="text-lg font-semibold tabular-nums text-slate-200">
+              <p className="text-[10px] uppercase tracking-[0.14em] text-ink-400">EWMA burn rate</p>
+              <p className="text-lg font-semibold tabular-nums text-ink-900">
                 {assessment.dailyBurnRate.toFixed(1)}
-                <span className="ml-1 text-[10px] font-normal text-slate-500">/day</span>
+                <span className="ml-1 text-[10px] font-normal text-ink-400">/day</span>
               </p>
             </div>
           </div>
@@ -109,18 +109,18 @@ export default function MedicineRiskCard({
       </div>
 
       {/* Signal summary strip, always visible. */}
-      <div className="grid gap-px border-t border-white/10 bg-white/[0.04] sm:grid-cols-4">
+      <div className="grid gap-px border-t border-rule bg-paper sm:grid-cols-4">
         {assessment.drivers.map((driver) => (
-          <div key={driver.code} className="bg-surface-800/90 px-4 py-2.5">
-            <p className="text-[10px] uppercase tracking-[0.12em] text-slate-500">{driver.label}</p>
+          <div key={driver.code} className="bg-surface px-4 py-2.5">
+            <p className="text-[10px] uppercase tracking-[0.12em] text-ink-400">{driver.label}</p>
             <p className="mt-1 flex items-baseline gap-1.5 text-xs">
-              <span className="font-semibold tabular-nums text-slate-100">{driver.points.toFixed(1)}</span>
-              <span className="text-slate-500">/ {driver.maxPoints} pts</span>
+              <span className="font-semibold tabular-nums text-ink-900">{driver.points.toFixed(1)}</span>
+              <span className="text-ink-400">/ {driver.maxPoints} pts</span>
             </p>
             <ProgressBar
               value={driver.points}
               max={driver.maxPoints}
-              color={DRIVER_COLORS[driver.code] ?? "#22d3ee"}
+              color={DRIVER_COLORS[driver.code] ?? "#14416b"}
               className="mt-1.5"
               height={3}
             />
@@ -129,26 +129,26 @@ export default function MedicineRiskCard({
       </div>
 
       {open ? (
-        <div className="space-y-4 border-t border-white/10 p-4">
+        <div className="space-y-4 border-t border-rule p-4">
           {/* Playbook action. */}
-          <div className="rounded-lg border border-white/10 bg-white/[0.02] p-3">
-            <p className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+          <div className="rounded-lg border border-rule bg-paper p-3">
+            <p className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-500">
               <Icon name="bolt" size={12} className="text-accent" />
               Playbook action
             </p>
-            <p className="mt-1.5 text-xs leading-relaxed text-slate-200">{assessment.recommendation}</p>
+            <p className="mt-1.5 text-xs leading-relaxed text-ink-900">{assessment.recommendation}</p>
             <dl className="mt-3 grid gap-x-6 gap-y-2 text-[11px] sm:grid-cols-3">
               <div>
-                <dt className="text-slate-500">Projected stockout</dt>
-                <dd className="text-slate-200">{formatDate(assessment.projectedStockoutDate)}</dd>
+                <dt className="text-ink-400">Projected stockout</dt>
+                <dd className="text-ink-900">{formatDate(assessment.projectedStockoutDate)}</dd>
               </div>
               <div>
-                <dt className="text-slate-500">Order by</dt>
-                <dd className="text-slate-200">{formatDate(assessment.reorderByDate)}</dd>
+                <dt className="text-ink-400">Order by</dt>
+                <dd className="text-ink-900">{formatDate(assessment.reorderByDate)}</dd>
               </div>
               <div>
-                <dt className="text-slate-500">Supplier</dt>
-                <dd className="text-slate-200">
+                <dt className="text-ink-400">Supplier</dt>
+                <dd className="text-ink-900">
                   {medicine.supplier.name} · reliability {medicine.supplier.reliabilityIndex.toFixed(2)}
                 </dd>
               </div>
@@ -157,7 +157,7 @@ export default function MedicineRiskCard({
 
           {/* Signal evidence. */}
           <div>
-            <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+            <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-500">
               Triangulated signals · Psi {assessment.psi.toFixed(1)}
             </p>
             <div className="grid gap-2 lg:grid-cols-2">
@@ -168,7 +168,7 @@ export default function MedicineRiskCard({
                   detail={driver.detail}
                   points={driver.points}
                   maxPoints={driver.maxPoints}
-                  color={DRIVER_COLORS[driver.code] ?? "#22d3ee"}
+                  color={DRIVER_COLORS[driver.code] ?? "#14416b"}
                 />
               ))}
             </div>
@@ -177,7 +177,7 @@ export default function MedicineRiskCard({
           {/* Stock ledger. */}
           <div className="grid gap-4 lg:grid-cols-2">
             <div>
-              <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+              <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-500">
                 Stock position
               </p>
               <dl className="space-y-1.5 text-xs">
@@ -199,31 +199,31 @@ export default function MedicineRiskCard({
                   { label: "Reorder threshold", value: `${medicine.reorderThreshold} ${medicine.unit}` },
                   { label: "Economic order quantity", value: `${medicine.economicOrderQuantity} ${medicine.unit}` },
                 ].map((row) => (
-                  <div key={row.label} className="flex items-center justify-between gap-4 border-b border-white/5 pb-1.5">
-                    <dt className="text-slate-400">{row.label}</dt>
-                    <dd className="tabular-nums text-slate-200">{row.value}</dd>
+                  <div key={row.label} className="flex items-center justify-between gap-4 border-b border-rule-soft pb-1.5">
+                    <dt className="text-ink-500">{row.label}</dt>
+                    <dd className="tabular-nums text-ink-900">{row.value}</dd>
                   </div>
                 ))}
               </dl>
               {alternativeLabels.length > 0 ? (
-                <p className="mt-3 text-[11px] leading-relaxed text-slate-400">
-                  <span className="font-semibold text-slate-300">Therapeutic equivalents on hand:</span>{" "}
+                <p className="mt-3 text-[11px] leading-relaxed text-ink-500">
+                  <span className="font-semibold text-ink-700">Therapeutic equivalents on hand:</span>{" "}
                   {alternativeLabels.join(", ")}
                 </p>
               ) : null}
             </div>
 
             <div>
-              <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+              <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-500">
                 Ward cover · {assessment.wardsAtRisk} ward(s) under {WARD_AT_RISK_DAYS} days
               </p>
               <ul className="space-y-2">
                 {coverage.map((ward) => (
                   <li key={ward.ward}>
                     <div className="flex items-baseline justify-between gap-3 text-[11px]">
-                      <span className="truncate text-slate-300">{WARD_LABELS[ward.ward]}</span>
-                      <span className="shrink-0 tabular-nums text-slate-400">
-                        <span className={ward.atRisk ? "font-semibold text-rose-300" : "text-slate-200"}>
+                      <span className="truncate text-ink-700">{WARD_LABELS[ward.ward]}</span>
+                      <span className="shrink-0 tabular-nums text-ink-500">
+                        <span className={ward.atRisk ? "font-semibold text-risk-critical" : "text-ink-900"}>
                           {formatDays(ward.coverDays)}d
                         </span>{" "}
                         · {ward.quantity}/{ward.parLevel} par
@@ -244,7 +244,7 @@ export default function MedicineRiskCard({
 
           {/* Burn curve. */}
           <div>
-            <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+            <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-500">
               EWMA consumption vs pre-surge baseline · {percent(assessment.burnTrendPct, 1)} change
             </p>
             <LineChart
@@ -253,7 +253,7 @@ export default function MedicineRiskCard({
                 {
                   key: "baseline",
                   label: "Pre-surge baseline",
-                  color: "#94a3b8",
+                  color: "#a1a7af",
                   dashed: true,
                   points: baselineSeries.map((value, index) => ({ label: dayLabels[index], value })),
                 },

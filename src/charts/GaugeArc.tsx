@@ -44,7 +44,7 @@ function arcPath(
 export default function GaugeArc({
   value,
   label,
-  color = "#22d3ee",
+  color = "#14416b",
   thresholds,
   size = 220,
   className,
@@ -68,16 +68,16 @@ export default function GaugeArc({
         <path
           d={arcPath(center.x, center.y, radius, START_ANGLE, END_ANGLE)}
           fill="none"
-          stroke="rgba(148,163,184,0.18)"
+          stroke="#e3e5e9"
           strokeWidth={strokeWidth}
-          strokeLinecap="round"
+          strokeLinecap="butt"
         />
         <path
           d={arcPath(center.x, center.y, radius, START_ANGLE, Math.max(sweep(clamped), START_ANGLE + 0.5))}
           fill="none"
           stroke={color}
           strokeWidth={strokeWidth}
-          strokeLinecap="round"
+          strokeLinecap="butt"
         />
         {thresholds?.map((threshold) => {
           const outer = polar(center.x, center.y, radius + strokeWidth / 2, sweep(threshold.at));
@@ -89,15 +89,15 @@ export default function GaugeArc({
               y1={inner.y}
               x2={outer.x}
               y2={outer.y}
-              stroke="rgba(7,13,26,0.85)"
+              stroke="#ffffff"
               strokeWidth={2}
             />
           );
         })}
       </svg>
       <div className="pointer-events-none absolute inset-x-0 bottom-0 text-center">
-        <div className="text-3xl font-semibold tabular-nums text-white">{clamped.toFixed(1)}</div>
-        {label ? <div className="text-[11px] uppercase tracking-widest text-slate-400">{label}</div> : null}
+        <div className="font-serif text-3xl font-semibold tabular-nums text-ink-900">{clamped.toFixed(1)}</div>
+        {label ? <div className="text-[11px] uppercase tracking-widest text-ink-500">{label}</div> : null}
       </div>
     </div>
   );

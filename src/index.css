@@ -4,7 +4,7 @@
 
 @layer base {
   :root {
-    color-scheme: dark;
+    color-scheme: light;
   }
 
   html,
@@ -14,72 +14,93 @@
   }
 
   body {
-    @apply bg-surface-900 text-slate-200 antialiased;
-    background-image:
-      radial-gradient(1100px 520px at 12% -10%, rgba(34, 211, 238, 0.1), transparent 60%),
-      radial-gradient(900px 480px at 105% 0%, rgba(244, 63, 94, 0.08), transparent 55%);
-    background-attachment: fixed;
+    @apply bg-canvas text-ink-700 antialiased;
+    font-size: 14px;
+  }
+
+  /* Document headings are set in a book serif, the way a printed report is. */
+  h1,
+  h2,
+  h3 {
+    @apply font-serif text-ink-900;
+    font-weight: 600;
+  }
+
+  /* Numbers in a clinical record line up column-wise. */
+  table,
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
   }
 
   ::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
+    width: 11px;
+    height: 11px;
   }
 
   ::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.02);
+    background: #f2f3f5;
   }
 
   ::-webkit-scrollbar-thumb {
-    background: rgba(148, 163, 184, 0.28);
-    border-radius: 999px;
-    border: 2px solid transparent;
-    background-clip: content-box;
+    background: #c2c6cc;
+    border: 3px solid #f2f3f5;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: rgba(148, 163, 184, 0.45);
-    background-clip: content-box;
+    background: #a1a7af;
   }
 
   :focus-visible {
-    @apply outline-none ring-2 ring-accent/70 ring-offset-2 ring-offset-surface-900;
+    @apply outline-none ring-1 ring-accent ring-offset-1 ring-offset-paper;
   }
 }
 
 @layer components {
-  /* Panel: the base surface used by every dashboard card in the prototype. */
+  /* Sheet: the ruled surface every screen is printed on. */
   .sm-panel {
-    @apply rounded-xl border border-white/10 bg-surface-800/80 shadow-panel backdrop-blur-sm;
+    @apply border border-rule bg-paper shadow-panel;
   }
 
   .sm-input {
-    @apply w-full rounded-lg border border-white/10 bg-surface-700/80 px-3 py-2 text-sm text-slate-100
-      placeholder:text-slate-500 transition focus:border-accent/60 focus:bg-surface-700;
+    @apply w-full border border-rule bg-paper px-2.5 py-1.5 text-sm text-ink-900
+      placeholder:text-ink-300 transition focus:border-accent focus:outline-none
+      focus:ring-1 focus:ring-accent/30 disabled:bg-canvas disabled:text-ink-500;
   }
 
   .sm-label {
-    @apply mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-slate-400;
+    @apply mb-1 block text-[10px] font-semibold uppercase tracking-[0.12em] text-ink-500;
   }
 
   .sm-chip {
-    @apply inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide;
+    @apply inline-flex items-center gap-1.5 border px-2 py-0.5 text-[10px] font-semibold
+      uppercase tracking-[0.08em];
   }
 
-  /* Field-level typography used across clinical tables. */
+  /* Table typography used across every clinical and financial record. */
   .sm-th {
-    @apply px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wider text-slate-400;
+    @apply border-b border-rule bg-canvas px-3 py-2 text-left text-[10px] font-semibold
+      uppercase tracking-[0.12em] text-ink-500;
   }
 
   .sm-td {
-    @apply px-3 py-2.5 align-middle text-sm text-slate-200;
+    @apply border-b border-rule-soft px-3 py-2 align-middle text-sm text-ink-700;
+  }
+
+  /* Double rule under the masthead, the way a letterhead is ruled. */
+  .sm-masthead-rule {
+    border-bottom: 1px solid theme("colors.rule.DEFAULT");
+    box-shadow: 0 3px 0 -1px theme("colors.rule.DEFAULT");
+  }
+
+  /* Small-caps eyebrow used above every section heading. */
+  .sm-eyebrow {
+    @apply text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-400;
   }
 }
 
 @media print {
   body {
-    @apply bg-white text-black;
-    background-image: none;
+    @apply bg-paper text-ink-900;
   }
 
   .no-print {
@@ -90,5 +111,6 @@
     color: #000 !important;
     background: #fff !important;
     border-color: #999 !important;
+    box-shadow: none !important;
   }
 }

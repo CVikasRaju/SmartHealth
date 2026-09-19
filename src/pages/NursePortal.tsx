@@ -188,9 +188,9 @@ function EmarRound() {
             {grouped.map((group) => (
               <div key={group.patientId}>
                 <div className="mb-2 flex flex-wrap items-center gap-2">
-                  <h3 className="text-sm font-semibold text-white">{group.patient?.name ?? "Unknown patient"}</h3>
-                  <span className="font-mono text-[10px] text-slate-500">{group.patient?.mrn}</span>
-                  <span className="sm-chip border-white/15 bg-white/5 text-slate-300">
+                  <h3 className="text-sm font-semibold text-ink-900">{group.patient?.name ?? "Unknown patient"}</h3>
+                  <span className="font-mono text-[10px] text-ink-400">{group.patient?.mrn}</span>
+                  <span className="sm-chip border-rule-strong bg-paper text-ink-700">
                     {group.patient ? `${ageFromDob(group.patient.dob)}y` : ""} · {group.patient?.currentAdmission.bedNumber}
                   </span>
                   {group.patient &&
@@ -211,21 +211,21 @@ function EmarRound() {
                     const token = ADMINISTRATION_STATUS_TOKENS[record.status];
                     const overdue = isOverdue(record);
                     return (
-                      <tr key={record.id} className={overdue ? "bg-rose-500/[0.05]" : undefined}>
-                        <td className="sm-td whitespace-nowrap text-slate-300">
+                      <tr key={record.id} className={overdue ? "bg-risk-critical/[0.05]" : undefined}>
+                        <td className="sm-td whitespace-nowrap text-ink-700">
                           {formatTime(record.scheduledFor)}
-                          {overdue ? <span className="ml-2 text-[10px] font-semibold text-rose-300">OVERDUE</span> : null}
+                          {overdue ? <span className="ml-2 text-[10px] font-semibold text-risk-critical">OVERDUE</span> : null}
                         </td>
-                        <td className="sm-td font-medium text-slate-100">{record.drugName}</td>
-                        <td className="sm-td text-slate-400">{record.dose}</td>
-                        <td className="sm-td uppercase text-slate-400">{record.route}</td>
+                        <td className="sm-td font-medium text-ink-900">{record.drugName}</td>
+                        <td className="sm-td text-ink-500">{record.dose}</td>
+                        <td className="sm-td uppercase text-ink-500">{record.route}</td>
                         <td className="sm-td">
                           <Chip token={token} />
                         </td>
-                        <td className="sm-td text-slate-400">
+                        <td className="sm-td text-ink-500">
                           {record.administeredBy ?? "—"}
                           {record.notes ? (
-                            <span className="mt-0.5 block max-w-[16rem] truncate text-[10px] text-slate-500">
+                            <span className="mt-0.5 block max-w-[16rem] truncate text-[10px] text-ink-400">
                               {record.notes}
                             </span>
                           ) : null}
@@ -292,15 +292,15 @@ function EmarRound() {
             />
           </Field>
 
-          <div className="rounded-lg border border-white/10 bg-white/[0.02] p-3">
+          <div className="rounded-lg border border-rule bg-paper p-3">
             <label className="flex items-center gap-2.5">
               <input
                 type="checkbox"
                 checked={captureVitals}
                 onChange={(event) => setCaptureVitals(event.target.checked)}
-                className="h-4 w-4 rounded border-white/20 bg-surface-700 accent-accent"
+                className="h-4 w-4 rounded border-rule-strong bg-surface accent-accent"
               />
-              <span className="text-xs font-medium text-slate-200">
+              <span className="text-xs font-medium text-ink-900">
                 Capture a pre-administration observation with this dose
               </span>
             </label>
@@ -370,7 +370,7 @@ function EmarRound() {
             ) : null}
           </div>
 
-          <p className="text-[11px] leading-relaxed text-slate-500">
+          <p className="text-[11px] leading-relaxed text-ink-400">
             Recording a dose appends an immutable eMAR entry with the acting nurse, the timestamp and any attached
             observation. The audit ledger cannot be edited from any portal.
           </p>
@@ -432,7 +432,7 @@ function VitalsSheet() {
           }
           icon={<Icon name="vitals" size={18} />}
           actions={
-            <span className="text-[11px] text-slate-400">
+            <span className="text-[11px] text-ink-500">
               {history.length} recorded observation{history.length === 1 ? "" : "s"}
             </span>
           }
@@ -460,41 +460,41 @@ function VitalsSheet() {
 
         {history.length >= 2 ? (
           <div className="mt-5 grid gap-5 lg:grid-cols-2">
-            <div className="rounded-lg border border-white/10 bg-white/[0.02] p-3">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+            <div className="rounded-lg border border-rule bg-paper p-3">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-500">
                 Heart rate and temperature
               </p>
               <div className="mt-2 space-y-2">
                 <Sparkline
                   values={history.map((record) => record.heartRateBpm)}
-                  stroke="#f43f5e"
+                  stroke="#a4232b"
                   height={36}
                   className="w-full"
                   ariaLabel="Heart rate trend"
                 />
                 <Sparkline
                   values={history.map((record) => record.temperatureC)}
-                  stroke="#fb923c"
+                  stroke="#a1590f"
                   height={36}
                   className="w-full"
                   ariaLabel="Temperature trend"
                 />
               </div>
-              <p className="mt-2 text-[10px] text-slate-500">Red: heart rate · Orange: temperature</p>
+              <p className="mt-2 text-[10px] text-ink-400">Crimson: heart rate · ochre: temperature</p>
             </div>
 
-            <div className="rounded-lg border border-white/10 bg-white/[0.02] p-3">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+            <div className="rounded-lg border border-rule bg-paper p-3">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-500">
                 Oxygen saturation
               </p>
               <Sparkline
                 values={history.map((record) => record.spo2)}
-                stroke="#22d3ee"
+                stroke="#14416b"
                 height={36}
                 className="mt-2 w-full"
                 ariaLabel="Oxygen saturation trend"
               />
-              <p className="mt-2 text-[10px] text-slate-500">
+              <p className="mt-2 text-[10px] text-ink-400">
                 Target range for this patient is above 93% on room air or with the prescribed oxygen therapy.
               </p>
             </div>
@@ -570,12 +570,12 @@ function VitalsSheet() {
           </Field>
         </div>
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-          <p className="text-[11px] text-slate-500">
+          <p className="text-[11px] text-ink-400">
             Blood pressure and oxygen saturation outside the expected band are surfaced to the treating physician in the
             audit trail.
           </p>
           <div className="flex items-center gap-3">
-            {saved ? <span className="text-[11px] text-emerald-300">Observation saved as {saved}.</span> : null}
+            {saved ? <span className="text-[11px] text-risk-normal">Observation saved as {saved}.</span> : null}
             <Button variant="primary" onClick={save}>
               <Icon name="check" size={14} />
               Save observation
@@ -595,20 +595,20 @@ function VitalsSheet() {
               .reverse()
               .map((record) => (
                 <tr key={record.id}>
-                  <td className="sm-td whitespace-nowrap text-slate-400">{formatDateTime(record.recordedAt)}</td>
-                  <td className={cx("sm-td tabular-nums", record.temperatureC >= 37.8 ? "text-orange-300" : "")}>
+                  <td className="sm-td whitespace-nowrap text-ink-500">{formatDateTime(record.recordedAt)}</td>
+                  <td className={cx("sm-td tabular-nums", record.temperatureC >= 37.8 ? "text-risk-high" : "")}>
                     {record.temperatureC}°
                   </td>
                   <td className="sm-td tabular-nums">{record.heartRateBpm}</td>
-                  <td className={cx("sm-td tabular-nums", record.systolic >= 160 ? "text-rose-300" : "")}>
+                  <td className={cx("sm-td tabular-nums", record.systolic >= 160 ? "text-risk-critical" : "")}>
                     {record.systolic}/{record.diastolic}
                   </td>
                   <td className="sm-td tabular-nums">{record.respiratoryRate}</td>
-                  <td className={cx("sm-td tabular-nums", record.spo2 < 93 ? "text-orange-300" : "")}>
+                  <td className={cx("sm-td tabular-nums", record.spo2 < 93 ? "text-risk-high" : "")}>
                     {record.spo2}%
                   </td>
                   <td className="sm-td tabular-nums">{record.painScore}</td>
-                  <td className="sm-td max-w-[20rem] text-slate-400">{record.notes}</td>
+                  <td className="sm-td max-w-[20rem] text-ink-500">{record.notes}</td>
                 </tr>
               ))}
           </DataTable>
@@ -681,14 +681,14 @@ function WardStockView() {
               return (
                 <tr key={row.medicine.id}>
                   <td className="sm-td">
-                    <span className="font-medium text-slate-100">{row.medicine.brandName}</span>
-                    <span className="ml-2 text-[10px] text-slate-500">{row.medicine.genericName}</span>
+                    <span className="font-medium text-ink-900">{row.medicine.brandName}</span>
+                    <span className="ml-2 text-[10px] text-ink-400">{row.medicine.genericName}</span>
                   </td>
-                  <td className={cx("sm-td tabular-nums", belowPar ? "text-orange-300" : "text-slate-200")}>
+                  <td className={cx("sm-td tabular-nums", belowPar ? "text-risk-high" : "text-ink-900")}>
                     {row.holding.quantity} {row.medicine.unit}
                   </td>
-                  <td className="sm-td tabular-nums text-slate-400">{row.holding.parLevel}</td>
-                  <td className="sm-td tabular-nums text-slate-400">
+                  <td className="sm-td tabular-nums text-ink-500">{row.holding.parLevel}</td>
+                  <td className="sm-td tabular-nums text-ink-500">
                     {row.coverage ? formatNumber(row.coverage.expectedDailyDemand, 2) : "—"}
                   </td>
                   <td className="sm-td">
@@ -696,7 +696,7 @@ function WardStockView() {
                       <span
                         className={cx(
                           "w-12 shrink-0 text-xs font-semibold tabular-nums",
-                          row.coverage?.atRisk ? "text-rose-300" : "text-slate-200",
+                          row.coverage?.atRisk ? "text-risk-critical" : "text-ink-900",
                         )}
                       >
                         {formatDays(row.coverage?.coverDays ?? 0)}d
@@ -715,13 +715,13 @@ function WardStockView() {
                   </td>
                   <td className="sm-td">
                     {belowPar ? (
-                      <span className="sm-chip border-orange-400/40 bg-orange-500/15 text-orange-200">Below par</span>
+                      <span className="sm-chip border-risk-high/45 bg-risk-high/[0.12] text-risk-high">Below par</span>
                     ) : row.holding.quantity > row.holding.parLevel ? (
-                      <span className="sm-chip border-sky-400/40 bg-sky-500/10 text-sky-200">
+                      <span className="sm-chip border-accent/45 bg-accent-soft text-accent">
                         +{row.holding.quantity - row.holding.parLevel} above par
                       </span>
                     ) : (
-                      <span className="sm-chip border-emerald-400/40 bg-emerald-500/10 text-emerald-200">At par</span>
+                      <span className="sm-chip border-risk-normal/45 bg-risk-normal/[0.08] text-risk-normal">At par</span>
                     )}
                   </td>
                 </tr>
@@ -730,7 +730,7 @@ function WardStockView() {
           </DataTable>
         )}
 
-        <p className="mt-4 text-[11px] leading-relaxed text-slate-500">
+        <p className="mt-4 text-[11px] leading-relaxed text-ink-400">
           Ward par levels are the quantity this ward wants on hand before a transfer makes sense. Stock held above par is
           counted as stranded by the shortage engine and cannot serve another ward without an inter-ward transfer, which
           is proposed and approved from the admin control room.

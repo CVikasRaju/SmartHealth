@@ -111,14 +111,14 @@ function RegistrationDesk() {
         <Panel>
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-start gap-3">
-              <span className="grid h-10 w-10 place-items-center rounded-lg bg-emerald-500/15 text-emerald-300">
+              <span className="grid h-10 w-10 place-items-center rounded-lg bg-risk-normal/[0.12] text-risk-normal">
                 <Icon name="check" size={20} />
               </span>
               <div>
-                <p className="text-sm font-semibold text-white">Registration complete</p>
-                <p className="mt-0.5 text-xs text-slate-400">
+                <p className="text-sm font-semibold text-ink-900">Registration complete</p>
+                <p className="mt-0.5 text-xs text-ink-500">
                   {registered.name} was issued medical record number{" "}
-                  <span className="font-mono text-slate-200">{registered.mrn}</span> and set as the active patient.
+                  <span className="font-mono text-ink-900">{registered.mrn}</span> and set as the active patient.
                 </p>
               </div>
             </div>
@@ -209,7 +209,7 @@ function RegistrationDesk() {
           </div>
 
           {error ? (
-            <p className="mt-4 rounded-lg border border-rose-400/40 bg-rose-500/10 p-3 text-xs text-rose-100">{error}</p>
+            <p className="mt-4 rounded-lg border border-risk-critical/45 bg-risk-critical/[0.08] p-3 text-xs text-risk-critical">{error}</p>
           ) : null}
 
           <div className="mt-5 flex justify-end">
@@ -259,22 +259,22 @@ function RegistrationDesk() {
             </Button>
 
             {allergies.length === 0 ? (
-              <p className="rounded-lg border border-dashed border-white/10 p-3 text-center text-[11px] text-slate-500">
+              <p className="rounded-lg border border-dashed border-rule p-3 text-center text-[11px] text-ink-400">
                 No allergies added. “None recorded” is stored if the chart is left empty.
               </p>
             ) : (
               <ul className="space-y-2">
                 {allergies.map((item, index) => (
-                  <li key={`${item.allergen}-${index}`} className="flex items-start justify-between gap-2 rounded-lg border border-white/10 bg-white/[0.02] p-2.5">
+                  <li key={`${item.allergen}-${index}`} className="flex items-start justify-between gap-2 rounded-lg border border-rule bg-paper p-2.5">
                     <span className="min-w-0">
-                      <span className="block text-xs text-slate-100">{item.allergen}</span>
-                      <span className="block text-[10px] text-slate-500">{item.reaction}</span>
+                      <span className="block text-xs text-ink-900">{item.allergen}</span>
+                      <span className="block text-[10px] text-ink-400">{item.reaction}</span>
                     </span>
                     <span className="flex shrink-0 items-center gap-1.5">
                       <Chip token={SEVERITY_TOKENS[item.severity]} />
                       <button
                         type="button"
-                        className="text-slate-500 hover:text-rose-300"
+                        className="text-ink-400 hover:text-risk-critical"
                         onClick={() => setAllergies((current) => current.filter((_, position) => position !== index))}
                       >
                         <Icon name="close" size={13} />
@@ -294,13 +294,13 @@ function RegistrationDesk() {
           {derived.patientsById.size > 0
             ? Array.from(derived.patientsById.values()).map((patient) => (
                 <tr key={patient.id}>
-                  <td className="sm-td font-mono text-[11px] text-slate-400">{patient.mrn}</td>
-                  <td className="sm-td font-medium text-slate-100">{patient.name}</td>
-                  <td className="sm-td text-slate-400">
+                  <td className="sm-td font-mono text-[11px] text-ink-500">{patient.mrn}</td>
+                  <td className="sm-td font-medium text-ink-900">{patient.name}</td>
+                  <td className="sm-td text-ink-500">
                     {ageFromDob(patient.dob)}y · {patient.gender}
                   </td>
-                  <td className="sm-td text-slate-400">{patient.bloodGroup}</td>
-                  <td className="sm-td text-slate-400">{patient.contact}</td>
+                  <td className="sm-td text-ink-500">{patient.bloodGroup}</td>
+                  <td className="sm-td text-ink-500">{patient.contact}</td>
                   <td className="sm-td">
                     <span className="flex flex-wrap gap-1">
                       {patient.allergies.map((allergy) => (
@@ -310,7 +310,7 @@ function RegistrationDesk() {
                       ))}
                     </span>
                   </td>
-                  <td className="sm-td text-slate-400">
+                  <td className="sm-td text-ink-500">
                     {patient.currentAdmission.isAdmitted
                       ? `${patient.currentAdmission.ward} ${patient.currentAdmission.bedNumber}`
                       : "Outpatient"}
@@ -406,22 +406,22 @@ function AppointmentDesk() {
               const editable = appointment.status === "scheduled" || appointment.status === "checked_in";
               return (
                 <tr key={appointment.id}>
-                  <td className="sm-td whitespace-nowrap tabular-nums text-slate-300">
+                  <td className="sm-td whitespace-nowrap tabular-nums text-ink-700">
                     {formatTime(appointment.scheduledFor)}
                   </td>
                   <td className="sm-td">
-                    <span className="font-medium text-slate-100">{patient?.name ?? "—"}</span>
-                    <span className="mt-0.5 block font-mono text-[10px] text-slate-500">{patient?.mrn}</span>
+                    <span className="font-medium text-ink-900">{patient?.name ?? "—"}</span>
+                    <span className="mt-0.5 block font-mono text-[10px] text-ink-400">{patient?.mrn}</span>
                   </td>
-                  <td className="sm-td text-slate-400">{doctor?.fullName ?? "—"}</td>
-                  <td className="sm-td max-w-[18rem] text-slate-300">{appointment.reason}</td>
+                  <td className="sm-td text-ink-500">{doctor?.fullName ?? "—"}</td>
+                  <td className="sm-td max-w-[18rem] text-ink-700">{appointment.reason}</td>
                   <td className="sm-td">
                     <Chip token={ACUITY_TOKENS[appointment.acuity]} />
                   </td>
                   <td className="sm-td">
                     <Chip token={APPOINTMENT_STATUS_TOKENS[appointment.status]} />
                   </td>
-                  <td className="sm-td tabular-nums text-slate-400">
+                  <td className="sm-td tabular-nums text-ink-500">
                     {appointment.queuePosition ?? "—"}
                   </td>
                   <td className="sm-td">
@@ -549,12 +549,12 @@ function AppointmentDesk() {
                 const patient = derived.patientsById.get(appointment.patientId);
                 const doctor = derived.staffById.get(appointment.doctorId);
                 return (
-                  <li key={appointment.id} className="rounded-lg border border-white/10 bg-white/[0.02] p-3">
+                  <li key={appointment.id} className="rounded-lg border border-rule bg-paper p-3">
                     <div className="flex flex-wrap items-center justify-between gap-2">
-                      <p className="text-xs font-semibold text-slate-100">{patient?.name ?? "—"}</p>
-                      <span className="text-[11px] text-slate-400">{formatDateTime(appointment.scheduledFor)}</span>
+                      <p className="text-xs font-semibold text-ink-900">{patient?.name ?? "—"}</p>
+                      <span className="text-[11px] text-ink-500">{formatDateTime(appointment.scheduledFor)}</span>
                     </div>
-                    <p className="mt-1 text-[11px] text-slate-400">
+                    <p className="mt-1 text-[11px] text-ink-500">
                       {appointment.reason} · {doctor?.fullName ?? "—"}
                     </p>
                     <div className="mt-2 flex items-center gap-2">
@@ -620,8 +620,8 @@ function AppointmentDesk() {
             />
           </Field>
 
-          <div className={cx("rounded-lg border p-3", acuity === "critical" ? "border-rose-400/40 bg-rose-500/10" : "border-white/10 bg-white/[0.02]")}>
-            <p className="text-[11px] leading-relaxed text-slate-300">
+          <div className={cx("rounded-lg border p-3", acuity === "critical" ? "border-risk-critical/45 bg-risk-critical/[0.08]" : "border-rule bg-paper")}>
+            <p className="text-[11px] leading-relaxed text-ink-700">
               {acuity === "critical"
                 ? "Critical acuity routes the patient straight to the top of the queue and flags the case on the clinician's list."
                 : "Check-in records the acuity, places the patient in the queue and stamps the audit trail."}
@@ -672,7 +672,7 @@ function ReportIntake() {
             />
           </Field>
           <div className="flex items-end">
-            <p className="text-[11px] leading-relaxed text-slate-500">
+            <p className="text-[11px] leading-relaxed text-ink-400">
               Reception staff may upload and read a simplified report but cannot annotate it; physician notes are
               restricted to the clinical roles.
             </p>
