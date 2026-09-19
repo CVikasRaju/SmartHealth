@@ -1,0 +1,94 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    @apply bg-surface-900 text-slate-200 antialiased;
+    background-image:
+      radial-gradient(1100px 520px at 12% -10%, rgba(34, 211, 238, 0.1), transparent 60%),
+      radial-gradient(900px 480px at 105% 0%, rgba(244, 63, 94, 0.08), transparent 55%);
+    background-attachment: fixed;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.02);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.28);
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(148, 163, 184, 0.45);
+    background-clip: content-box;
+  }
+
+  :focus-visible {
+    @apply outline-none ring-2 ring-accent/70 ring-offset-2 ring-offset-surface-900;
+  }
+}
+
+@layer components {
+  /* Panel: the base surface used by every dashboard card in the prototype. */
+  .sm-panel {
+    @apply rounded-xl border border-white/10 bg-surface-800/80 shadow-panel backdrop-blur-sm;
+  }
+
+  .sm-input {
+    @apply w-full rounded-lg border border-white/10 bg-surface-700/80 px-3 py-2 text-sm text-slate-100
+      placeholder:text-slate-500 transition focus:border-accent/60 focus:bg-surface-700;
+  }
+
+  .sm-label {
+    @apply mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-slate-400;
+  }
+
+  .sm-chip {
+    @apply inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide;
+  }
+
+  /* Field-level typography used across clinical tables. */
+  .sm-th {
+    @apply px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wider text-slate-400;
+  }
+
+  .sm-td {
+    @apply px-3 py-2.5 align-middle text-sm text-slate-200;
+  }
+}
+
+@media print {
+  body {
+    @apply bg-white text-black;
+    background-image: none;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .print-sheet {
+    color: #000 !important;
+    background: #fff !important;
+    border-color: #999 !important;
+  }
+}
