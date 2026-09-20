@@ -146,6 +146,49 @@ function DemoIdentityPicker() {
   );
 }
 
+/**
+ * The API refused to run because it has no credentials.
+ *
+ * Reached when `/api/health` answers `not_configured`. Without this the page
+ * offers a local developer hint, which is actively misleading on a deployment:
+ * the API is reachable and the fix is a setting, not a running server.
+ */
+function MisconfiguredPanel({ message }: { message: string | null }) {
+  return (
+    <div className="space-y-3">
+      <div className="rounded border border-risk-critical/40 bg-risk-critical/[0.05] px-3.5 py-3">
+        <p className="text-xs font-semibold text-risk-critical">This deployment is not configured</p>
+        <p className="mt-1.5 text-[11px] leading-relaxed text-ink-700">
+          {message ?? "The API is running but refused to start because its credentials are missing."}
+        </p>
+      </div>
+
+      <div className="rounded border border-rule bg-canvas/60 p-3.5">
+        <p className="text-[11px] font-semibold text-ink-800">To fix it</p>
+        <ol className="mt-2 space-y-1.5 text-[11px] leading-relaxed text-ink-600">
+          <li>
+            1. In Vercel, open this project → <span className="font-medium text-ink-800">Settings →
+            Environment Variables</span>.
+          </li>
+          <li>
+            2. Add <code className="font-mono">SUPABASE_URL</code>,{" "}
+            <code className="font-mono">SUPABASE_ANON_KEY</code> and{" "}
+            <code className="font-mono">SUPABASE_SERVICE_ROLE_KEY</code> for all three environments.
+          </li>
+          <li>
+            3. <span className="font-medium text-ink-800">Redeploy.</span> Environment variables are
+            read when a deployment is created, so an existing one will not pick them up.
+          </li>
+        </ol>
+        <p className="mt-2.5 border-t border-rule-soft pt-2 text-[10px] leading-relaxed text-ink-400">
+          Values are in Supabase under Project Settings → API. Full walkthrough:{" "}
+          <code className="font-mono">docs/deployment.md</code>.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 /** Supabase mode: a real email and password check. */
 function PasswordForm() {
   const { signIn } = useSession();
@@ -230,7 +273,7 @@ function PasswordForm() {
 }
 
 export default function LoginPage() {
-  const { mode, configured, status, error } = useSession();
+  const { mode, configured, apiMisconfigured, status, error } = useSession();
 
   if (status === "loading") {
     return (
@@ -257,13 +300,21 @@ export default function LoginPage() {
               </div>
               <h2 className="mt-1 font-serif text-2xl font-semibold text-ink-900">Sign in to your portal</h2>
               <p className="mt-1.5 text-xs leading-relaxed text-ink-500">
-                {configured
-                  ? "Select an evaluator identity below or sign in with hospital credentials."
-                  : "Serving seeded offline demonstration dataset."}
+                {apiMisconfigured
+                  ? "The API is reachable but has no credentials, so no account can be checked."
+                  : configured
+                    ? "Select an evaluator identity below or sign in with hospital credentials."
+                    : "Serving seeded offline demonstration dataset."}
               </p>
 
               <div className="mt-6">
-                {configured ? <PasswordForm /> : <DemoIdentityPicker />}
+                {apiMisconfigured ? (
+                  <MisconfiguredPanel message={error} />
+                ) : configured ? (
+                  <PasswordForm />
+                ) : (
+                  <DemoIdentityPicker />
+                )}
               </div>
 
               {error ? (
@@ -274,10 +325,14 @@ export default function LoginPage() {
             </div>
 
             <p className="mt-6 border-t border-rule-soft pt-4 text-[10px] leading-relaxed text-ink-400">
-              Session Mode: <span className="font-semibold text-ink-700">{mode}</span> (reported by the API).{" "}
-              {configured
-                ? "Secured with Supabase Auth cryptographic verification."
-                : "Seeded demo mode with simulated role-based isolation."}
+              Session Mode:{" "}
+              <span className="font-semibold text-ink-700">{apiMisconfigured ? "unavailable" : mode}</span>{" "}
+              (reported by the API).{" "}
+              {apiMisconfigured
+                ? "No credentials are available in this deployment."
+                : configured
+                  ? "Secured with Supabase Auth cryptographic verification."
+                  : "Seeded demo mode with simulated role-based isolation."}
             </p>
           </div>
         </div>

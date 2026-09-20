@@ -52,6 +52,12 @@ interface SessionValue {
   mode: SessionMode;
   /** True when a Supabase client could be built, so passwords can be checked. */
   configured: boolean;
+  /**
+   * The API answered, and refused to run because it is missing credentials.
+   * Distinct from an unreachable API: this one is a deployment problem with a
+   * specific fix, and saying so beats offering a local-only hint.
+   */
+  apiMisconfigured: boolean;
   api: ApiClient;
   /** Identities the demo sign-in screen offers. */
   demoProfiles: DemoProfileView[];
@@ -95,6 +101,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   /* -------- Which credential model applies -------- */
 
   const [server, setServer] = useState<{ mode: SessionMode; auth: HealthPayload["auth"] } | null>(null);
+  const [apiMisconfigured, setApiMisconfigured] = useState(false);
   const [discoveryDone, setDiscoveryDone] = useState(false);
 
   useEffect(() => {
@@ -105,10 +112,13 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       .then((payload) => {
         if (!cancelled) setServer({ mode: payload.mode, auth: payload.auth ?? null });
       })
-      .catch(() => {
+      .catch((cause: unknown) => {
         // The API is unreachable, so the build's own configuration is all there
-        // is to go on. A signed-out demo screen reports the failure specifically.
-        if (!cancelled) setServer(null);
+        // is to go on. A configuration refusal is reported separately, because
+        // its fix is a deployment setting rather than a local server.
+        if (cancelled) return;
+        setServer(null);
+        setApiMisconfigured(cause instanceof ApiError && cause.code === "not_configured");
       })
       .finally(() => {
         if (!cancelled) setDiscoveryDone(true);
@@ -229,6 +239,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       status,
       mode,
       configured: Boolean(authClient),
+      apiMisconfigured,
       api,
       demoProfiles,
       demoProfilesLoading,
@@ -238,7 +249,19 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       signOut,
       clearError: () => setError(null),
     }),
-    [api, authClient, demoProfiles, demoProfilesLoading, error, mode, signIn, signInAs, signOut, status],
+    [
+      api,
+      apiMisconfigured,
+      authClient,
+      demoProfiles,
+      demoProfilesLoading,
+      error,
+      mode,
+      signIn,
+      signInAs,
+      signOut,
+      status,
+    ],
   );
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
