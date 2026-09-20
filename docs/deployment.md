@@ -135,16 +135,37 @@ accounts and the Table Editor shows rows in `medicines`.
    | `SUPABASE_URL` | project URL | server only |
    | `SUPABASE_ANON_KEY` | anon key | server only |
    | `SUPABASE_SERVICE_ROLE_KEY` | service role key | server only, secret |
-   | `VITE_SUPABASE_URL` | project URL | compiled into the browser bundle |
-   | `VITE_SUPABASE_ANON_KEY` | anon key | compiled into the browser bundle |
+   | `VITE_SUPABASE_URL` | project URL | optional, see below |
+   | `VITE_SUPABASE_ANON_KEY` | anon key | optional, see below |
 
    Do **not** set `SMARTMEDIC_DEMO_MODE` on a real deployment: it makes the API serve the seeded
    dataset in memory and accept the demo identity header.
 
+   The two `VITE_` values are optional. They are inlined when the bundle is produced, so a deploy
+   built without them would have a sign-in form and nothing to sign in to — which is why the API
+   publishes the same publishable settings from `/api/health` and the browser reads them at runtime.
+   Set them if you like (the password then never leaves the identity provider's own API), leave them
+   out and nothing breaks. Both are public either way.
+
 4. **Deploy.**
 
-The `VITE_` values are baked in at build time, so if you change them after a deploy, redeploy for the
-browser to pick them up.
+Whatever you set now is only read at build time for `VITE_` values, so redeploy after changing them.
+
+### How the API is deployed
+
+The whole API is one serverless function: `api/[...path].ts`. Everything under `api/_lib/` is a
+supporting module, and Vercel deliberately ignores files and directories whose names begin with an
+underscore, which is what keeps them out of the function list. Two consequences worth knowing before
+editing anything in `api/`:
+
+- Keep the catch-all at `api/[...path].ts`. There is no need for a rewrite rule in `vercel.json`; the
+  function receives the real request path.
+- Relative imports inside `api/` carry an explicit `.js` extension (`from "./_lib/routes.js"`). The
+  package is `"type": "module"`, so Vercel emits ES modules, and Node's ESM resolver requires the
+  extension. The extensionless form typechecks and bundles fine, then fails *only* once deployed.
+
+`npm run verify:deploy` reproduces that compilation and boots the result over HTTP, so the failure
+shows up locally.
 
 ---
 
@@ -152,10 +173,22 @@ browser to pick them up.
 
 ```bash
 curl -s https://<your-app>.vercel.app/api/health
-# {"success":true,"data":{"status":"ok","mode":"supabase",...}}
+# {"success":true,"data":{"status":"ok","mode":"supabase","authenticated":false,"actorRole":null,"auth":{...}}}
 ```
 
-`mode` must read `supabase`. If it reads `demo`, the server variables did not reach the function.
+`mode` must read `supabase`. If it reads `demo`, the server variables did not reach the function. If
+this returns a Vercel 404 page rather than JSON, the function itself did not deploy — see the first
+two rows of §9.
+
+A second check, which exercises the same path the browser uses after signing in:
+
+```bash
+curl -s -o /dev/null -w '%{http_code}\n' https://<your-app>.vercel.app/api/bootstrap
+# 401
+```
+
+`401` is the correct answer for an unauthenticated request. Anything else — `200`, or a page of HTML
+— means the API is not enforcing authentication and should be investigated before using the site.
 
 Then open the app and sign in as `meera.krishnan@smartmedic.io`. To confirm the write path is live,
 approve an inter-ward transfer in the *Shortage control room* and check that `transfer_proposals` and
@@ -170,8 +203,8 @@ approve an inter-ward transfer in the *Shortage control room* and check that `tr
 | `SUPABASE_URL` | API | yes | Postgres and Auth endpoint |
 | `SUPABASE_ANON_KEY` | API | yes | verifies caller access tokens |
 | `SUPABASE_SERVICE_ROLE_KEY` | API, seed script | yes | reads and writes the tables |
-| `VITE_SUPABASE_URL` | browser | yes | Supabase Auth |
-| `VITE_SUPABASE_ANON_KEY` | browser | yes | Supabase Auth |
+| `VITE_SUPABASE_URL` | browser | no | Supabase Auth, read from `/api/health` when absent |
+| `VITE_SUPABASE_ANON_KEY` | browser | no | Supabase Auth, read from `/api/health` when absent |
 | `SMARTMEDIC_DEMO_MODE` | API | no | serve the seeded dataset instead of Postgres |
 | `SEED_DEMO_PASSWORD` | seed script | no | password for the provisioned accounts |
 | `PORT` | `npm run dev:api` | no | local API port, default `8787` |
@@ -205,6 +238,10 @@ application, and it is the mode every verification step in the README was run ag
 - [ ] Enable point-in-time recovery on the Supabase project and actually test a restore.
 - [ ] Add a content security policy. `vercel.json` currently sets `X-Frame-Options`,
       `X-Content-Type-Options` and `Referrer-Policy` only.
+- [ ] Never set an AI provider key as `VITE_*`. Everything with that prefix is compiled into the
+      browser bundle and is readable by anyone. The report simplifier is designed around this: it
+      takes a key from the operator at run time, stored in their own browser, and works fully without
+      one.
 - [ ] Decide on audit retention. The ledger is append-only and nothing prunes it yet.
 
 ---
@@ -213,7 +250,9 @@ application, and it is the mode every verification step in the README was run ag
 
 | Symptom | Cause | Fix |
 |---|---|---|
+| Sign-in appears to work, then the app reports it could not reach the API; every `/api/...` call answers 404 | the serverless function was not deployed — the entry point is missing, or was renamed to something starting with `_`, which Vercel ignores | restore `api/[...path].ts` and redeploy; confirm with `curl .../api/health` |
 | `503 not_configured`, or the sign-in page reports a configuration problem | the API has no Supabase variables | add them, redeploy |
+| The sign-in page lists demo identities on a real deployment | the API is in demo mode, so the browser follows it | check `curl .../api/health`; remove `SMARTMEDIC_DEMO_MODE` and set the three server variables |
 | `/api/health` reports `mode: demo` in production | as above, or `SMARTMEDIC_DEMO_MODE` is set | remove the flag, add the variables |
 | `403 no_profile` after a successful sign-in | the auth user has no matching `profiles` row | run `npm run seed` |
 | Sign-in works but every screen is empty | the migration was not applied, or the seed did not run | apply the SQL, then `npm run seed` |

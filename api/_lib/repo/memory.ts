@@ -8,9 +8,9 @@
  * explicitly.
  */
 
-import { createSeedDatabase } from "../../../src/data/mockData";
+import { createSeedDatabase } from "../../../src/data/mockData.js";
 import type { DatabaseState, Role, StaffMember } from "../../../src/types";
-import { DuplicateIdError, type ProfileRecord, type Repository } from "./types";
+import { DuplicateIdError, type ProfileRecord, type Repository } from "./types.js";
 import type { CollectionName } from "../registry";
 
 function clone<T>(value: T): T {

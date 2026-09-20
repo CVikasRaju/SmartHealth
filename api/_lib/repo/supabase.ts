@@ -13,9 +13,9 @@
 
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
-import { createSeedDatabase } from "../../../src/data/mockData";
+import { createSeedDatabase } from "../../../src/data/mockData.js";
 import type { DatabaseState, Hospital } from "../../../src/types";
-import { deriveProfiles } from "./memory";
+import { deriveProfiles } from "./memory.js";
 import {
   COLLECTIONS,
   coerceParent,
@@ -24,8 +24,8 @@ import {
   type ChildSpec,
   type CollectionName,
   type CollectionSpec,
-} from "../registry";
-import { DuplicateIdError, type ProfileRecord, type Repository } from "./types";
+} from "../registry.js";
+import { DuplicateIdError, type ProfileRecord, type Repository } from "./types.js";
 
 /** Postgres unique-violation. */
 const UNIQUE_VIOLATION = "23505";

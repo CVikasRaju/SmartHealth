@@ -5,22 +5,37 @@
  *
  *   `supabase` — the real deployment. Credentials come from the environment and
  *                every write lands in Postgres.
- *   `demo`     — a local-only fallback that serves the same API surface from the
- *                in-memory seed, so the whole stack can be exercised without a
- *                database. It is refused outright in production, so a missing
- *                environment variable can never leave a deployed API serving
- *                unauthenticated hospital data.
+ *   `demo`     — a fallback that serves the API surface from the in-memory seed,
+ *                so the whole stack can be exercised without a database.
+ *
+ * Demo mode is deliberately hard to reach: locally it is automatic (there is no
+ * `.env`), but a deployment must opt in with `SMARTMEDIC_DEMO_MODE=1`. Without
+ * that switch, a missing credential raises instead of quietly serving fabricated
+ * rows through an API the browser treats as the hospital's database.
  */
 
-export type ApiMode = "supabase" | "demo";
+export interface ApiConfigBase {
+  isProduction: boolean;
+}
 
-export interface ApiConfig {
-  mode: ApiMode;
+/** Every credential is present: Postgres and Supabase Auth are in use. */
+export interface SupabaseConfig extends ApiConfigBase {
+  mode: "supabase";
+  supabaseUrl: string;
+  supabaseAnonKey: string;
+  supabaseServiceRoleKey: string;
+}
+
+/** Credentials absent or deliberately bypassed: the seeded dataset is the store. */
+export interface DemoConfig extends ApiConfigBase {
+  mode: "demo";
   supabaseUrl: string | null;
   supabaseAnonKey: string | null;
   supabaseServiceRoleKey: string | null;
-  isProduction: boolean;
 }
+
+export type ApiConfig = SupabaseConfig | DemoConfig;
+export type ApiMode = ApiConfig["mode"];
 
 import { readFileSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
@@ -64,9 +79,10 @@ export function isProductionRuntime(): boolean {
 /**
  * Resolve the runtime configuration.
  *
- * Throws when the deployment is missing credentials and demo mode has not been
- * explicitly requested, which is what stops a half-configured production
- * deploy from silently falling back to seeded data.
+ * Throws when a deployment is missing credentials and has not asked for demo
+ * mode, which is what stops a half-configured production deploy from serving
+ * seeded data as though it were the hospital's record. `routeRequest` turns the
+ * throw into a 503 that names the missing variables.
  */
 export function readConfig(): ApiConfig {
   loadEnvFile();
@@ -79,6 +95,19 @@ export function readConfig(): ApiConfig {
     return { mode: "supabase", supabaseUrl, supabaseAnonKey, supabaseServiceRoleKey, isProduction };
   }
 
-  // Gracefully fallback to high-fidelity demo mode with pre-seeded data for evaluators
-  return { mode: "demo", supabaseUrl, supabaseAnonKey, supabaseServiceRoleKey, isProduction };
+  const missing = [
+    supabaseUrl ? null : "SUPABASE_URL",
+    supabaseAnonKey ? null : "SUPABASE_ANON_KEY",
+    supabaseServiceRoleKey ? null : "SUPABASE_SERVICE_ROLE_KEY",
+  ].filter((name): name is string => name !== null);
+
+  if (!isProduction || readEnv("SMARTMEDIC_DEMO_MODE") === "1") {
+    return { mode: "demo", supabaseUrl, supabaseAnonKey, supabaseServiceRoleKey, isProduction };
+  }
+
+  throw new Error(
+    `The API is not configured. Missing ${missing.join(", ")}. ` +
+      "Set these in the deployment's environment variables and redeploy, or set " +
+      "SMARTMEDIC_DEMO_MODE=1 to serve the seeded demonstration dataset instead.",
+  );
 }

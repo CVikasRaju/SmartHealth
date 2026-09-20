@@ -6,14 +6,25 @@
  * table in `_lib/routes.ts`. The same router backs `npm run dev:api`, so the
  * local and deployed behaviour cannot drift.
  *
+ * Two deployment details are load-bearing:
+ *
+ *   1. The file lives at `api/[...path].ts`, so Vercel treats it as one function
+ *      covering every path under `/api`. Files and directories whose names begin
+ *      with an underscore (`_lib/`) are ignored by Vercel, which is how the
+ *      router and services stay out of the function list.
+ *   2. Every relative import carries an explicit `.js` extension. The package is
+ *      `"type": "module"`, so Vercel compiles these files to ES modules, and
+ *      Node's ESM resolver requires the extension on a compiled `.js` path. The
+ *      extensionless form works in Vite but throws `ERR_MODULE_NOT_FOUND` here.
+ *
  * Vercel's Node runtime parses JSON bodies for us when the content type says so;
  * anything else is read off the stream.
  */
 
 import type { IncomingMessage, ServerResponse } from "node:http";
 
-import { API_HEADERS, buildApiRequest } from "./_lib/http";
-import { routeRequest } from "./_lib/routes";
+import { API_HEADERS, buildApiRequest } from "./_lib/http.js";
+import { routeRequest } from "./_lib/routes.js";
 
 interface VercelRequest extends IncomingMessage {
   body?: unknown;

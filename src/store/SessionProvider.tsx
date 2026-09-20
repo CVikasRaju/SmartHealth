@@ -13,6 +13,13 @@
  *   demo     — no credentials. The operator picks one of the seeded identities,
  *              which is sent as a header that the API only honours when it is
  *              itself running against the seeded dataset.
+ *
+ * Which one applies is decided by the *API*, not by the build. Vite inlines
+ * `VITE_*` variables when the bundle is produced, so a deployment rebuilt without
+ * them would otherwise render a sign-in form with nothing to sign in to. The
+ * provider therefore asks `/api/health` first — it is the one endpoint that
+ * answers before authentication — and falls back to the build-time variables
+ * only when the API cannot be reached at all.
  */
 
 import {
@@ -34,10 +41,16 @@ const DEMO_ACTOR_KEY = "smartmedic.demo.actor.v1";
 export type SessionMode = "supabase" | "demo";
 export type SessionStatus = "loading" | "signed_out" | "signed_in";
 
+/** The subset of `GET /api/health` this provider needs. */
+interface HealthPayload {
+  mode: SessionMode;
+  auth: { url: string; anonKey: string } | null;
+}
+
 interface SessionValue {
   status: SessionStatus;
   mode: SessionMode;
-  /** True when Supabase credentials are present in the build. */
+  /** True when a Supabase client could be built, so passwords can be checked. */
   configured: boolean;
   api: ApiClient;
   /** Identities the demo sign-in screen offers. */
@@ -64,15 +77,13 @@ function describeSignInError(message: string): string {
 }
 
 export function SessionProvider({ children }: { children: ReactNode }) {
-  const authConfig = useMemo(() => readClientAuthConfig(), []);
-  const authClient = useMemo(() => (authConfig ? createAuthClient(authConfig) : null), [authConfig]);
-  const mode: SessionMode = authClient ? "supabase" : "demo";
+  const buildAuthConfig = useMemo(() => readClientAuthConfig(), []);
 
   const [status, setStatus] = useState<SessionStatus>("loading");
   const [token, setToken] = useState<string | null>(null);
   const [demoActor, setDemoActor] = useState<string | null>(null);
   const [demoProfiles, setDemoProfiles] = useState<DemoProfileView[]>([]);
-  const [demoProfilesLoading, setDemoProfilesLoading] = useState(mode === "demo");
+  const [demoProfilesLoading, setDemoProfilesLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Credentials are read through a ref so the API client keeps a stable
@@ -80,6 +91,43 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const credentials = useRef({ token, demoActor });
   credentials.current = { token, demoActor };
   const api = useMemo(() => createApiClient(() => credentials.current), []);
+
+  /* -------- Which credential model applies -------- */
+
+  const [server, setServer] = useState<{ mode: SessionMode; auth: HealthPayload["auth"] } | null>(null);
+  const [discoveryDone, setDiscoveryDone] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    void api
+      .request<HealthPayload>("GET", "/health")
+      .then((payload) => {
+        if (!cancelled) setServer({ mode: payload.mode, auth: payload.auth ?? null });
+      })
+      .catch(() => {
+        // The API is unreachable, so the build's own configuration is all there
+        // is to go on. A signed-out demo screen reports the failure specifically.
+        if (!cancelled) setServer(null);
+      })
+      .finally(() => {
+        if (!cancelled) setDiscoveryDone(true);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [api]);
+
+  const mode: SessionMode = server?.mode ?? (buildAuthConfig ? "supabase" : "demo");
+
+  // Plain strings rather than an object, so the client below is built once.
+  const authUrl = mode === "supabase" ? server?.auth?.url ?? buildAuthConfig?.url ?? null : null;
+  const authAnonKey = mode === "supabase" ? server?.auth?.anonKey ?? buildAuthConfig?.anonKey ?? null : null;
+  const authClient = useMemo(
+    () => (authUrl && authAnonKey ? createAuthClient({ url: authUrl, anonKey: authAnonKey }) : null),
+    [authUrl, authAnonKey],
+  );
 
   /* -------- Credential lifecycle -------- */
 
@@ -108,9 +156,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   /* -------- Demo identities -------- */
 
   useEffect(() => {
-    if (mode !== "demo") return;
+    if (!discoveryDone || mode !== "demo") return;
 
     let cancelled = false;
+    setDemoProfilesLoading(true);
+
     void api
       .demoProfiles()
       .then((profiles) => {
@@ -132,14 +182,16 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [api, mode]);
+  }, [api, discoveryDone, mode]);
 
   /* -------- Actions -------- */
 
   const signIn = useCallback(
     async (email: string, password: string) => {
       if (!authClient) {
-        throw new Error("This build has no Supabase configuration, so password sign-in is unavailable.");
+        throw new Error(
+          "This deployment has no browser authentication configuration, so password sign-in is unavailable.",
+        );
       }
       setError(null);
       const { error: signInError } = await authClient.auth.signInWithPassword({
@@ -176,7 +228,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     () => ({
       status,
       mode,
-      configured: Boolean(authConfig),
+      configured: Boolean(authClient),
       api,
       demoProfiles,
       demoProfilesLoading,
@@ -186,7 +238,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       signOut,
       clearError: () => setError(null),
     }),
-    [api, authConfig, demoProfiles, demoProfilesLoading, error, mode, signIn, signInAs, signOut, status],
+    [api, authClient, demoProfiles, demoProfilesLoading, error, mode, signIn, signInAs, signOut, status],
   );
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;

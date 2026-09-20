@@ -13,14 +13,15 @@
  * entry, and the authoritative ledger is what a fresh bootstrap returns.
  */
 
-import { createSeedDatabase } from "../../src/data/mockData";
+import { createSeedDatabase } from "../../src/data/mockData.js";
 import {
   applyWardTransfer,
   dispenseStock,
-} from "../../src/engine/shortageEngine";
-import { derivePaymentStatus, roundMoney, splitPayment } from "../../src/engine/billingEngine";
+} from "../../src/engine/shortageEngine.js";
+import { derivePaymentStatus, roundMoney, splitPayment } from "../../src/engine/billingEngine.js";
 import type { DatabaseState, Medicine, PaymentMethod, WardId } from "../../src/types";
 
+import { ANONYMOUS_ACTOR } from "./auth.js";
 import {
   HttpError,
   ok,
@@ -34,9 +35,9 @@ import {
   requireString,
   type RequestContext,
   type RouteResult,
-} from "./http";
-import type { CollectionName } from "./registry";
-import { DuplicateIdError, type ProfileRecord } from "./repo/types";
+} from "./http.js";
+import type { CollectionName } from "./registry.js";
+import { DuplicateIdError, type ProfileRecord } from "./repo/types.js";
 
 /** Rows for the client to merge, keyed by collection. */
 export interface StatePatch {
@@ -203,8 +204,32 @@ export function scopeSnapshot(db: DatabaseState, profile: ProfileRecord): Databa
 /* Read endpoints                                                      */
 /* ------------------------------------------------------------------ */
 
+/**
+ * Health, and the browser's public auth configuration.
+ *
+ * This is the only endpoint that answers before authentication, so it carries
+ * the two things a client needs before it can sign in: which mode the API is in,
+ * and — because a Vite build inlines `VITE_*` variables at build time, which
+ * means a deployment rebuilt without them would otherwise have no way to reach
+ * the identity provider at all — the publishable Supabase client settings.
+ *
+ * Both values are public by design. The `anon` key ships inside every Supabase
+ * browser bundle, and it grants nothing here: row level security is enabled on
+ * every table and no policy exists, so only the service role can read a row.
+ * That service role key is server-side only and is never included in a response.
+ */
 export async function handleHealth(ctx: RequestContext): Promise<RouteResult> {
-  return ok({ status: "ok", mode: ctx.config.mode, actorRole: ctx.actor.role });
+  const authenticated = ctx.actor.id !== ANONYMOUS_ACTOR.id;
+  return ok({
+    status: "ok",
+    mode: ctx.config.mode,
+    authenticated,
+    actorRole: authenticated ? ctx.actor.role : null,
+    auth:
+      ctx.config.mode === "supabase"
+        ? { url: ctx.config.supabaseUrl, anonKey: ctx.config.supabaseAnonKey }
+        : null,
+  });
 }
 
 export async function handleBootstrap(ctx: RequestContext): Promise<RouteResult> {

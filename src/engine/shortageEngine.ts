@@ -31,7 +31,7 @@ import type {
 } from "@/types";
 // Relative rather than aliased: this module is shared by the browser bundle and
 // the serverless API, and only the browser side resolves the `@/` alias.
-import { WARD_LABELS } from "../types";
+import { WARD_LABELS } from "../types.js";
 
 /* ------------------------------------------------------------------ */
 /* Tunable model constants                                             */

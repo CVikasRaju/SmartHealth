@@ -8,23 +8,13 @@
 import { useState, type FormEvent } from "react";
 
 import { BRANDING } from "@/config/branding";
+import { DEMO_PASSWORD, SEEDED_ACCOUNTS } from "@/config/demoAccounts";
 import { useSession } from "@/store/SessionProvider";
 import { ROLE_META } from "@/ui/theme";
 import Icon from "@/ui/Icon";
 import ThemeToggle from "@/ui/ThemeToggle";
 import { Button, Field, TextInput } from "@/ui/primitives";
 import { cx } from "@/utils/format";
-
-/** Accounts provisioned by `npm run seed`, for evaluators. */
-const SEEDED_ACCOUNTS = [
-  { role: "superadmin", email: "superadmin@smartmedic.io", label: "Super Admin (Platform Governance)" },
-  { role: "admin", email: "meera.krishnan@smartmedic.io", label: "Hospital Admin (KMC Hospital)" },
-  { role: "doctor", email: "dr.sharma@smartmedic.io", label: "Doctor (Pulmonology / OPD)" },
-  { role: "nurse", email: "fatima.sheikh@smartmedic.io", label: "Nurse (ICU & Wards)" },
-  { role: "receptionist", email: "kavya.nair@smartmedic.io", label: "Receptionist (Front Desk / Triage)" },
-  { role: "cashier", email: "arjun.deshpande@smartmedic.io", label: "Cashier (Billing & POS)" },
-  { role: "patient", email: "priya.sharma@example.com", label: "Patient (Health Record Portal)" },
-] as const;
 
 function Letterhead() {
   return (
@@ -109,8 +99,8 @@ function DemoIdentityPicker() {
   if (demoProfiles.length === 0) {
     return (
       <p className="border border-risk-critical/40 bg-risk-critical/[0.05] px-3 py-2.5 text-xs leading-relaxed text-risk-critical">
-        The API did not return any demo identities. Start it with <code className="font-mono">npm run dev:api</code>{" "}
-        or run <code className="font-mono">npm run dev:stack</code>.
+        The API did not return any demo identities. Running locally, start it with{" "}
+        <code className="font-mono">npm run dev:api</code> or <code className="font-mono">npm run dev:stack</code>.
       </p>
     );
   }
@@ -166,7 +156,7 @@ function PasswordForm() {
 
   const fillAccount = (accEmail: string) => {
     setEmail(accEmail);
-    setPassword("SmartMedic@2026");
+    setPassword(DEMO_PASSWORD);
     setError(null);
   };
 
@@ -209,7 +199,7 @@ function PasswordForm() {
             <span className="text-accent font-bold text-xs">⚡ Evaluator 1-Click Role Access</span>
           </div>
           <span className="text-[10px] text-ink-500 bg-paper px-2 py-0.5 rounded border border-rule font-mono">
-            Password: <strong>SmartMedic@2026</strong>
+            Password: <strong>{DEMO_PASSWORD}</strong>
           </span>
         </div>
         <p className="text-[10.5px] leading-relaxed text-ink-600">
@@ -284,7 +274,7 @@ export default function LoginPage() {
             </div>
 
             <p className="mt-6 border-t border-rule-soft pt-4 text-[10px] leading-relaxed text-ink-400">
-              Session Mode: <span className="font-semibold text-ink-700">{mode}</span>.{" "}
+              Session Mode: <span className="font-semibold text-ink-700">{mode}</span> (reported by the API).{" "}
               {configured
                 ? "Secured with Supabase Auth cryptographic verification."
                 : "Seeded demo mode with simulated role-based isolation."}

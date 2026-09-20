@@ -7,22 +7,33 @@
  * so the whole API can be exercised from a test without a network listener.
  */
 
-import { resolveActor } from "./auth";
-import { readConfig, type ApiConfig } from "./config";
-import { HttpError, type ApiRequest, type RequestContext, type RouteHandler } from "./http";
-import { DuplicateIdError, getRepository } from "./repo";
-import * as services from "./services";
+// Relative imports carry explicit `.js` extensions: Vercel compiles these files
+// to ES modules, and Node's ESM resolver requires the extension on a compiled
+// path. See the note in `api/[...path].ts`.
+import { resolveActor, resolveOptionalActor } from "./auth.js";
+import { readConfig, type ApiConfig } from "./config.js";
+import { HttpError, type ApiRequest, type RequestContext, type RouteHandler } from "./http.js";
+import { DuplicateIdError, getRepository } from "./repo/index.js";
+import * as services from "./services.js";
 
 interface RouteDefinition {
   method: string;
   pattern: string;
   handler: RouteHandler;
+  /**
+   * Answers before authentication. A public route receives `ANONYMOUS_ACTOR`
+   * instead of a role, so it can report the API's state without holding a
+   * credential — and cannot accidentally be authorised as a staff member.
+   */
+  public?: boolean;
 }
 
 const ROUTES: RouteDefinition[] = [
-  { method: "GET", pattern: "/health", handler: services.handleHealth },
+  { method: "GET", pattern: "/health", handler: services.handleHealth, public: true },
   { method: "GET", pattern: "/bootstrap", handler: services.handleBootstrap },
-  { method: "GET", pattern: "/demo/profiles", handler: services.handleDemoProfiles },
+  // Public so the demo sign-in screen can list the seeded identities; the
+  // handler itself refuses unless the API is serving the seeded dataset.
+  { method: "GET", pattern: "/demo/profiles", handler: services.handleDemoProfiles, public: true },
   { method: "POST", pattern: "/demo/reset", handler: services.handleResetDemo },
 
   { method: "POST", pattern: "/hospitals", handler: services.handleCreateHospital },
@@ -131,7 +142,9 @@ export async function routeRequest(req: ApiRequest, config?: ApiConfig): Promise
     }
 
     const repo = getRepository(resolved);
-    const actor = await resolveActor(req, resolved, repo);
+    const actor = matched.route.public
+      ? await resolveOptionalActor(req, resolved, repo)
+      : await resolveActor(req, resolved, repo);
     const ctx: RequestContext = {
       config: resolved,
       repo,

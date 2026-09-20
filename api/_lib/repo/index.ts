@@ -6,19 +6,22 @@
  * local session would be reseeded on every request.
  */
 
-import { createSeedDatabase } from "../../../src/data/mockData";
-import type { ApiMode, ApiConfig } from "../config";
-import { createMemoryRepository } from "./memory";
-import { createSupabaseRepository } from "./supabase";
-import type { Repository } from "./types";
+import { createSeedDatabase } from "../../../src/data/mockData.js";
+import type { ApiMode, ApiConfig } from "../config.js";
+import { createMemoryRepository } from "./memory.js";
+import { createSupabaseRepository } from "./supabase.js";
+import type { Repository } from "./types.js";
 
 let cached: { mode: ApiMode; repo: Repository } | null = null;
 
 export function getRepository(config: ApiConfig): Repository {
   if (cached && cached.mode === config.mode) return cached.repo;
 
+  // The mode is exhaustive: `readConfig` only reports `supabase` once every
+  // credential is present, so there is no halfway state that could silently
+  // serve seeded rows from a deployment configured for Postgres.
   const repo =
-    config.mode === "supabase" && config.supabaseUrl && config.supabaseServiceRoleKey
+    config.mode === "supabase"
       ? createSupabaseRepository(config.supabaseUrl, config.supabaseServiceRoleKey)
       : createMemoryRepository(createSeedDatabase());
 
@@ -31,5 +34,5 @@ export function resetRepositoryCache(): void {
   cached = null;
 }
 
-export { DuplicateIdError } from "./types";
-export type { ProfileRecord, Repository } from "./types";
+export { DuplicateIdError } from "./types.js";
+export type { ProfileRecord, Repository } from "./types.js";

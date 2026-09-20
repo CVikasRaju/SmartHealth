@@ -35,8 +35,8 @@ import type {
 } from "@/types";
 // Relative rather than aliased: the seed is also consumed by the database seed
 // script and the serverless API, neither of which resolves the `@/` alias.
-import { FREQUENCY_DOSES_PER_DAY } from "../types";
-import { MEDICAL_DISCLAIMER, parseReportText } from "../engine/reportEngine";
+import { FREQUENCY_DOSES_PER_DAY } from "../types.js";
+import { MEDICAL_DISCLAIMER, parseReportText } from "../engine/reportEngine.js";
 
 /* ------------------------------------------------------------------ */
 /* Deterministic clock helpers                                         */
