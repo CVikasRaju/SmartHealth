@@ -8,7 +8,6 @@
 import { useState, type FormEvent } from "react";
 
 import { BRANDING } from "@/config/branding";
-import { DEMO_PASSWORD, SEEDED_ACCOUNTS } from "@/config/demoAccounts";
 import { useSession } from "@/store/SessionProvider";
 import { ROLE_META } from "@/ui/theme";
 import Icon from "@/ui/Icon";
@@ -63,19 +62,19 @@ function Letterhead() {
           ))}
         </ul>
 
-        {/* Note for Evaluators & Scalability Architecture */}
+        {/* Scalability architecture */}
         <div className="mt-6 rounded-xl border border-accent/20 bg-accent-soft/30 p-3.5 space-y-2 text-xs">
           <div className="flex items-center gap-2">
             <span className="grid h-5 w-5 place-items-center rounded bg-accent text-white text-[10px] font-bold">
               ℹ️
             </span>
-            <span className="font-bold text-ink-900">Note for Judges &amp; Evaluators</span>
+            <span className="font-bold text-ink-900">Scalable Production Architecture</span>
           </div>
           <p className="text-[11px] leading-relaxed text-ink-700">
-            <strong>Demonstration Instance:</strong> Pre-seeded accounts are provided on the right so you can seamlessly evaluate all 7 role-based permission boundaries without manual registration.
+            <strong>Built for scale:</strong> Designed for enterprise regional hospital networks with stateless API routes, isolated PostgreSQL schemas, Row-Level Security (RLS), and zero-PHI leak boundaries.
           </p>
           <p className="text-[11px] leading-relaxed text-ink-700">
-            <strong>Scalable Production Architecture:</strong> Designed for enterprise regional hospital networks with stateless API routes, isolated PostgreSQL schemas, Row-Level Security (RLS), and zero-PHI leak boundaries.
+            <strong>Access is issued by your hospital administrator.</strong> Accounts are provisioned centrally; this screen never displays or stores credentials.
           </p>
         </div>
       </div>
@@ -130,7 +129,6 @@ function DemoIdentityPicker() {
               <span className="h-7 w-1.5 shrink-0 rounded-full" style={{ background: meta.accent }} />
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-xs font-semibold text-ink-900">{profile.fullName}</span>
-                <span className="block truncate text-[10px] text-ink-400">{profile.email}</span>
               </span>
               <span
                 className="shrink-0 text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded border border-rule bg-paper"
@@ -197,12 +195,6 @@ function PasswordForm() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const fillAccount = (accEmail: string) => {
-    setEmail(accEmail);
-    setPassword(DEMO_PASSWORD);
-    setError(null);
-  };
-
   async function handleSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
     setError(null);
@@ -236,38 +228,10 @@ function PasswordForm() {
         {busy ? "Verifying..." : "Sign in to Portal"}
       </Button>
 
-      <div className="rounded-xl border border-accent/30 bg-accent-soft/20 p-3.5 space-y-2">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5">
-            <span className="text-accent font-bold text-xs">⚡ Evaluator 1-Click Role Access</span>
-          </div>
-          <span className="text-[10px] text-ink-500 bg-paper px-2 py-0.5 rounded border border-rule font-mono">
-            Password: <strong>{DEMO_PASSWORD}</strong>
-          </span>
-        </div>
-        <p className="text-[10.5px] leading-relaxed text-ink-600">
-          Click any role below to pre-fill credentials and evaluate that role's security boundaries and clinical workflows:
-        </p>
-        <div className="mt-2 space-y-1.5">
-          {SEEDED_ACCOUNTS.map((account) => {
-            const meta = ROLE_META[account.role];
-            return (
-              <button
-                key={account.email}
-                type="button"
-                onClick={() => fillAccount(account.email)}
-                className="flex w-full items-center justify-between rounded-lg border border-rule bg-paper px-2.5 py-1.5 text-left text-xs transition hover:border-accent hover:bg-accent-soft shadow-2xs"
-              >
-                <div className="min-w-0 flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full shrink-0" style={{ background: meta.accent }} />
-                  <span className="font-medium text-ink-800 truncate">{account.label}</span>
-                </div>
-                <span className="text-[10px] font-mono text-accent shrink-0 ml-2 font-semibold">1-Click Fill →</span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
+      <p className="border-t border-rule-soft pt-3 text-[10.5px] leading-relaxed text-ink-500">
+        Credentials are issued by your hospital administrator and verified by Supabase Auth. If you
+        cannot sign in, contact your facility's IT desk.
+      </p>
     </form>
   );
 }
@@ -303,7 +267,7 @@ export default function LoginPage() {
                 {apiMisconfigured
                   ? "The API is reachable but has no credentials, so no account can be checked."
                   : configured
-                    ? "Select an evaluator identity below or sign in with hospital credentials."
+                    ? "Enter the hospital email and password issued to you by your administrator."
                     : "Serving seeded offline demonstration dataset."}
               </p>
 
