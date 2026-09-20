@@ -14,15 +14,17 @@
  *
  * Checks performed against the emitted handler, booted over real HTTP:
  *   1. every module in the function graph resolved as an ES module;
- *   2. with no credentials the API serves the seeded dataset;
- *   3. on a credentialed deployment, a request without a valid token is
+ *   2. the rewrite in `vercel.json` and the handler agree on how the matched
+ *      route is passed, and both request shapes reach the same endpoint;
+ *   3. with no credentials the API serves the seeded dataset;
+ *   4. on a credentialed deployment, a request without a valid token is
  *      rejected rather than handed the administrator's identity.
  *
  *   node scripts/verify-deploy.mjs
  */
 
 import { execFileSync } from "node:child_process";
-import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { createServer } from "node:http";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -31,7 +33,7 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const scratch = join(root, ".tmp");
 const workDir = join(scratch, "vercel-emit");
 const tsconfigPath = join(scratch, "tsconfig.vercel.json");
-const entrySource = join(root, "api", "[...path].ts");
+const entrySource = join(root, "api", "index.ts");
 
 let failures = 0;
 let checks = 0;
@@ -117,7 +119,7 @@ try {
 
 let handler = null;
 try {
-  handler = (await import(pathToFileURL(join(workDir, "api", "[...path].js")).href)).default;
+  handler = (await import(pathToFileURL(join(workDir, "api", "index.js")).href)).default;
   assert("the emitted entry loads as an ES module", typeof handler === "function");
 } catch (error) {
   assert("the emitted entry loads as an ES module", false, error.message);
@@ -135,13 +137,41 @@ for (const emitted of ["api/_lib/routes.js", "api/_lib/auth.js", "src/data/mockD
   assert(`${emitted} is emitted and resolves from the function`, present);
 }
 
-if (!handler) {
+/* ------------------------------------------------------------------ */
+/* 2. The rewrite and the handler must agree                           */
+/* ------------------------------------------------------------------ */
+
+console.log("\nChecking the /api rewrite\n");
+
+const vercelConfig = JSON.parse(readFileSync(join(root, "vercel.json"), "utf8"));
+const apiRewrite = (vercelConfig.rewrites ?? []).find((rule) => rule.source === "/api/(.*)");
+assert(
+  "vercel.json routes /api/* to the index function",
+  typeof apiRewrite?.destination === "string" && apiRewrite.destination.startsWith("/api/index"),
+  JSON.stringify(apiRewrite ?? null),
+);
+
+// A non-Next project has no catch-all file routing, so the matched route has to
+// travel as a query parameter. Both sides are read from their own source of
+// truth, because a rename on one side only would break every API call in
+// production while every test here still passed.
+const routeParam = /[?&]([A-Za-z_][A-Za-z0-9_]*)=\$1/.exec(apiRewrite?.destination ?? "")?.[1] ?? null;
+assert("the rewrite names the matched route in a query parameter", Boolean(routeParam));
+assert(
+  `the handler reads the parameter the rewrite sets (${routeParam})`,
+  routeParam !== null &&
+    readFileSync(join(root, "api", "_lib", "http.ts"), "utf8").includes(
+      `export const ROUTE_PARAM = "${routeParam}"`,
+    ),
+);
+
+if (!handler || !routeParam) {
   console.log(`\n${failures} of ${checks} checks failed\n`);
   process.exit(1);
 }
 
 /* ------------------------------------------------------------------ */
-/* 2. Drive the emitted handler over HTTP                              */
+/* 3. Drive the emitted handler over HTTP                              */
 /* ------------------------------------------------------------------ */
 
 process.chdir(isolatedCwd);
@@ -184,6 +214,29 @@ process.env.NODE_ENV = "development";
     "a seeded dataset publishes no auth configuration",
     health.payload?.data?.auth === null,
     JSON.stringify(health.payload?.data?.auth ?? null),
+  );
+
+  // The shape Vercel actually produces when it applies the rewrite.
+  const rewrittenHealth = await call("GET", `/api/index?${routeParam}=health`);
+  assert(
+    "the rewritten request reaches the same endpoint",
+    rewrittenHealth.status === 200 && rewrittenHealth.payload?.data?.mode === "demo",
+    `status ${rewrittenHealth.status}`,
+  );
+
+  const rewrittenBootstrap = await call("GET", `/api/index?${routeParam}=bootstrap`);
+  assert(
+    "a rewritten request routes to its own endpoint, not the root",
+    rewrittenBootstrap.status === 200 &&
+      (rewrittenBootstrap.payload?.data?.db?.medicines?.length ?? 0) > 0,
+    `status ${rewrittenBootstrap.status}, ${JSON.stringify(rewrittenBootstrap.payload?.error ?? null)}`,
+  );
+
+  const rewrittenUnknown = await call("GET", `/api/index?${routeParam}=nope`);
+  assert(
+    "an unknown rewritten route answers 404 rather than the root",
+    rewrittenUnknown.status === 404,
+    `status ${rewrittenUnknown.status}`,
   );
 
   const profiles = await call("GET", "/api/demo/profiles");
@@ -244,6 +297,13 @@ process.env.SUPABASE_SERVICE_ROLE_KEY = "service-role-placeholder";
     "the rejection names the missing token",
     bootstrap.payload?.error?.code === "missing_token",
     String(bootstrap.payload?.error?.code),
+  );
+
+  const rewritten = await call("GET", `/api/index?${routeParam}=bootstrap`);
+  assert(
+    "the rewritten shape is rejected without a token too",
+    rewritten.status === 401,
+    `status ${rewritten.status}`,
   );
 
   const forged = await call("GET", "/api/bootstrap", { token: "not-a-real-token" });

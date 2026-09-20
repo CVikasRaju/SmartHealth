@@ -153,19 +153,28 @@ Whatever you set now is only read at build time for `VITE_` values, so redeploy 
 
 ### How the API is deployed
 
-The whole API is one serverless function: `api/[...path].ts`. Everything under `api/_lib/` is a
-supporting module, and Vercel deliberately ignores files and directories whose names begin with an
-underscore, which is what keeps them out of the function list. Two consequences worth knowing before
-editing anything in `api/`:
+The whole API is one serverless function, `api/index.ts`, and `vercel.json` rewrites `/api/*` onto it.
+Everything under `api/_lib/` is a supporting module. Four details are load-bearing, and each of them
+was a real deployment failure on this project before it was understood:
 
-- Keep the catch-all at `api/[...path].ts`. There is no need for a rewrite rule in `vercel.json`; the
-  function receives the real request path.
-- Relative imports inside `api/` carry an explicit `.js` extension (`from "./_lib/routes.js"`). The
-  package is `"type": "module"`, so Vercel emits ES modules, and Node's ESM resolver requires the
+- **A catch-all filename does not work here.** `api/[...path].ts` is the *Next.js* routing convention.
+  In a plain Vite project Vercel does not serve `/api/health` from a bracketed filename, so that layout
+  deploys a function that nothing can reach — and every call answers with Vercel's own 404 page.
+- **The matched route travels in a query parameter.** Because the platform's behaviour around a
+  rewrite is not something to depend on, `/api/(.*)` is rewritten to
+  `/api/index?__route=$1` and the handler routes on `__route` (`ROUTE_PARAM` in `api/_lib/http.ts`,
+  read from the same name in `vercel.json`). The browser URL is unchanged — a rewrite is not a
+  redirect — and both the rewritten and the pass-through shapes resolve identically.
+- **Underscored names stay out of the function list.** Vercel ignores files and directories whose
+  names begin with `_`, which is why the router and services live in `api/_lib/` without becoming
+  endpoints of their own.
+- **Relative imports inside `api/` carry an explicit `.js` extension** (`from "./_lib/routes.js"`).
+  The package is `"type": "module"`, so Vercel emits ES modules and Node's ESM resolver requires the
   extension. The extensionless form typechecks and bundles fine, then fails *only* once deployed.
 
-`npm run verify:deploy` reproduces that compilation and boots the result over HTTP, so the failure
-shows up locally.
+`npm run verify:deploy` reproduces that compilation, boots the result over HTTP, checks that the
+rewrite and the handler agree on the parameter name, and exercises both request shapes — so any of
+these failures shows up locally instead of on the live site.
 
 ---
 
@@ -250,7 +259,7 @@ application, and it is the mode every verification step in the README was run ag
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| Sign-in appears to work, then the app reports it could not reach the API; every `/api/...` call answers 404 | the serverless function was not deployed — the entry point is missing, or was renamed to something starting with `_`, which Vercel ignores | restore `api/[...path].ts` and redeploy; confirm with `curl .../api/health` |
+| Sign-in appears to work, then the app reports it could not reach the API; every `/api/...` call answers 404 | the serverless function is not reachable — the entry point is missing, was renamed to something starting with `_` (which Vercel ignores), or was given a bracketed catch-all filename (which only works in Next.js) | keep `api/index.ts` and its `/api/(.*)` rewrite in `vercel.json`, then redeploy; confirm with `curl .../api/health` |
 | `503 not_configured`, or the sign-in page reports a configuration problem | the API has no Supabase variables | add them, redeploy |
 | The sign-in page lists demo identities on a real deployment | the API is in demo mode, so the browser follows it | check `curl .../api/health`; remove `SMARTMEDIC_DEMO_MODE` and set the three server variables |
 | `/api/health` reports `mode: demo` in production | as above, or `SMARTMEDIC_DEMO_MODE` is set | remove the flag, add the variables |

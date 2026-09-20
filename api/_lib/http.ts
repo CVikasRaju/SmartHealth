@@ -23,6 +23,17 @@ export class HttpError extends Error {
   }
 }
 
+/**
+ * Query parameter carrying the matched route.
+ *
+ * `vercel.json` rewrites `/api/*` onto the single function in `api/index.ts`
+ * and names the route it matched here. A non-Next project has no catch-all file
+ * routing, so this is what tells the function which endpoint was called — and
+ * it keeps that independent of whether the platform preserves the request path
+ * through a rewrite. Must stay in step with the rewrite in `vercel.json`.
+ */
+export const ROUTE_PARAM = "__route";
+
 export interface ApiRequest {
   /** Upper-cased HTTP method. */
   method: string;
@@ -192,9 +203,17 @@ export function buildApiRequest(input: {
 
   const url = input.url && input.url.length > 0 ? input.url : "/";
   const [rawPath, rawQuery = ""] = url.split("?");
+  const query = new URLSearchParams(rawQuery);
 
-  // The function is mounted at /api, so the router works on the remaining path.
-  let path = rawPath.replace(/^\/api(?=\/|$)/, "");
+  // Prefer the route the rewrite matched. Failing that — the local dev server,
+  // or a runtime that passes the original path straight through — the function
+  // is mounted at /api, so the router works on the remaining path.
+  const rewritten = query.get(ROUTE_PARAM);
+  query.delete(ROUTE_PARAM);
+
+  let path = rewritten
+    ? `/${rewritten.replace(/^\/+/, "").split("?")[0]}`
+    : rawPath.replace(/^\/api(?=\/|$)/, "");
   if (path.length === 0) path = "/";
   if (path.length > 1 && path.endsWith("/")) path = path.slice(0, -1);
 
@@ -206,7 +225,7 @@ export function buildApiRequest(input: {
   return {
     method: (input.method ?? "GET").toUpperCase(),
     path,
-    query: new URLSearchParams(rawQuery),
+    query,
     headers,
     body: input.body ?? null,
     token: token && token.length > 0 ? token : null,

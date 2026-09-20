@@ -1,23 +1,32 @@
 /**
  * Vercel serverless entry point.
  *
- * This catch-all function serves the whole API: `/api/bootstrap`,
- * `/api/reports/:id`, and so on all land here and are dispatched by the route
- * table in `_lib/routes.ts`. The same router backs `npm run dev:api`, so the
- * local and deployed behaviour cannot drift.
+ * This one function serves the whole API — `/api/bootstrap`, `/api/reports/:id`
+ * and so on all land here and are dispatched by the route table in
+ * `_lib/routes.ts`. The same router backs `npm run dev:api`, so the local and
+ * deployed behaviour cannot drift.
  *
- * Two deployment details are load-bearing:
+ * Three deployment details are load-bearing, and each one was learned the hard
+ * way on this project:
  *
- *   1. The file lives at `api/[...path].ts`, so Vercel treats it as one function
- *      covering every path under `/api`. Files and directories whose names begin
- *      with an underscore (`_lib/`) are ignored by Vercel, which is how the
- *      router and services stay out of the function list.
- *   2. Every relative import carries an explicit `.js` extension. The package is
+ *   1. The file is `api/index.ts` and `vercel.json` rewrites `/api/*` onto it.
+ *      A catch-all such as `api/[...path].ts` is a *Next.js* feature: in a plain
+ *      Vite project Vercel does not serve `/api/health` from a bracketed
+ *      filename, so that layout deploys a function nothing can reach and every
+ *      call answers with Vercel's own 404 page.
+ *   2. Files and directories whose names begin with an underscore are ignored by
+ *      Vercel, which is why the router and services live under `api/_lib/`
+ *      without becoming functions of their own.
+ *   3. Every relative import carries an explicit `.js` extension. The package is
  *      `"type": "module"`, so Vercel compiles these files to ES modules, and
- *      Node's ESM resolver requires the extension on a compiled `.js` path. The
- *      extensionless form works in Vite but throws `ERR_MODULE_NOT_FOUND` here.
+ *      Node's ESM resolver requires the extension on a compiled `.js` path; the
+ *      extensionless form works in Vite and throws `ERR_MODULE_NOT_FOUND` here.
  *
- * Vercel's Node runtime parses JSON bodies for us when the content type says so;
+ * The rewrite names the matched route in `__route` rather than relying on the
+ * request path surviving it, so routing does not depend on how the platform
+ * passes the path through. See `ROUTE_PARAM` in `_lib/http.ts`.
+ *
+ * Vercel's Node runtime parses JSON bodies when the content type says so;
  * anything else is read off the stream.
  */
 
